@@ -14,6 +14,7 @@ Operational guides:
 
 - [AWS Sandbox Setup](docs/aws-sandbox-setup.html)
 - [Testing and Validation](docs/testing-validation.html)
+- [Edge Platform Handbook](docs/book/index.html)
 
 ## Local runtime
 

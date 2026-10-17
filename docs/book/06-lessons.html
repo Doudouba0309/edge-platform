@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 6 — The real failures | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 6</p>
+  <h1>The real failures, and what they taught us</h1>
+  <p class="lede">
+    This part is deliberately uncomfortable. Every error below actually happened
+    while building the AWS proof. The fix matters, but the lesson matters more.
+  </p>
+
+  <div class="callout">
+    <strong>General rule.</strong>
+    When the component is “running” but nothing arrives, the problem is usually
+    one of three things: the wrong identity, the wrong permission, or the wrong
+    endpoint. The log message often names a different layer than the one that is
+    broken.
+  </div>
+
+  <h2>The failure log</h2>
+
+  <div class="card">
+    <h3>1. A docs-only change took five minutes</h3>
+    <p><strong>Symptom:</strong> editing an HTML or README file triggered full image and nucleus builds.</p>
+    <p><strong>Cause:</strong> the workflow had no path filter, and GitHub runners did not keep Docker layers between runs.</p>
+    <p><strong>Fix:</strong> skip the pipeline for docs-only changes and use a buildx GHA cache for image layers.</p>
+    <p><strong>Lesson:</strong> a “small” documentation change is only cheap if CI agrees. Cache and path rules are part of developer experience, not optional polish.</p>
+  </div>
+
+  <div class="card">
+    <h3>2. IAM user sign-in asked for an account id</h3>
+    <p><strong>Symptom:</strong> after creating <code>edge-platform-admin</code>, the sign-in page wanted a 12-digit account id.</p>
+    <p><strong>Cause:</strong> an IAM user signs in to a specific account; the account id (or an account alias) is the address.</p>
+    <p><strong>Fix:</strong> copy the account id from the root console’s top-right menu before signing out, or use <strong>Forgot account ID?</strong> with the root email. An account alias makes the URL easier.</p>
+    <p><strong>Lesson:</strong> the IAM user creation page does not create a separate sign-in address. Save the account id first.</p>
+  </div>
+
+  <div class="card">
+    <h3>3. The wheelhouse contained <code>awsiotsdk</code>, but the component did not install it</h3>
+    <p><strong>Symptom:</strong> the component installed and started, but the Greengrass sink could not import the AWS IoT SDK.</p>
+    <p><strong>Cause:</strong> the recipe installed <code>edge-collector</code>, not <code>edge-collector[aws]</code>. The wheel was in the wheelhouse, but pip had no reason to install the optional extra.</p>
+    <p><strong>Fix:</strong> install <code>edge-collector[aws]</code> in the recipe.</p>
+    <p><strong>Lesson:</strong> a dependency being present in an artifact does not mean it is installed. Optional extras are opt-in.</p>
+  </div>
+
+  <div class="card">
+    <h3>4. The component was deployable but never matched the core</h3>
+    <p><strong>Symptom:</strong> deployment failed with no available component version.</p>
+    <p><strong>Cause:</strong> the recipe used <code>architecture: arm64</code>; the core reports <code>aarch64</code>.</p>
+    <p><strong>Fix:</strong> use <code>aarch64</code> and <code>amd64</code> in the recipe manifests.</p>
+    <p><strong>Lesson:</strong> platform names are exact strings, not marketing names. A pure-Python artifact is not exempt from the platform match rule.</p>
+  </div>
+
+  <div class="card">
+    <h3>5. “Certificate is invalid on this endpoint”</h3>
+    <p><strong>Symptom:</strong> the core connected to IoT Core and reported healthy, but the token exchange returned 403 “Certificate is invalid on this endpoint”.</p>
+    <p><strong>Cause:</strong> the credentials endpoint was derived from the data endpoint prefix. It is a different endpoint with a different hostname.</p>
+    <p><strong>Fix:</strong> call <code>aws iot describe-endpoint --endpoint-type iot:CredentialProvider</code> and use that value.</p>
+    <p><strong>Lesson:</strong> the data endpoint and the credentials endpoint are two different services. Never guess one from the other.</p>
+  </div>
+
+  <div class="card">
+    <h3>6. TES returned 403 “Access Denied”</h3>
+    <p><strong>Symptom:</strong> the credentials endpoint was now correct, but the core still could not get temporary credentials.</p>
+    <p><strong>Cause:</strong> the certificate’s IoT policy did not grant <code>iot:AssumeRoleWithCertificate</code> on the role alias.</p>
+    <p><strong>Fix:</strong> add that permission with the role alias ARN as the resource.</p>
+    <p><strong>Lesson:</strong> the role trust policy and the certificate policy are separate. The role can trust the credentials service and still be unusable if the certificate is not allowed to ask for it.</p>
+  </div>
+
+  <div class="card">
+    <h3>7. Artifact download returned 403</h3>
+    <p><strong>Symptom:</strong> the deployment reached S3, then failed with “GetBucketLocation returns 403 Access Denied”.</p>
+    <p><strong>Cause:</strong> the TES inline policy allowed <code>s3:GetObject</code> on <code>bucket/*</code>, but not <code>s3:GetBucketLocation</code> on the bucket itself.</p>
+    <p><strong>Fix:</strong> add both actions and include both the bucket ARN and the object ARN.</p>
+    <p><strong>Lesson:</strong> S3 permissions are not uniform across bucket-level and object-level actions. The error names the missing action if you read the nested cause.</p>
+  </div>
+
+  <div class="card">
+    <h3>8. IPC publish was not authorized</h3>
+    <p><strong>Symptom:</strong> the component connected to the nucleus socket, then logged “Not Authorized” on every batch.</p>
+    <p><strong>Cause:</strong> the recipe’s access-control operation or resource did not match the actual IPC call. An old invalid policy in the nucleus package store also kept blocking authorization after a new version was installed.</p>
+    <p><strong>Fix:</strong> use the registered operation <code>aws.greengrass#PublishToIoTCore</code> and a matching topic resource (<code>edge/+/+/telemetry</code>). If an older recipe was invalid, start with a clean core root so only the valid recipe is loaded.</p>
+    <p><strong>Lesson:</strong> “component running” is not “component allowed to publish”. Read the nucleus authorization log, not only the component log. Immutable versions plus a stale local package store can hide a correct recipe.</p>
+  </div>
+
+  <div class="card">
+    <h3>9. The local collector would not start</h3>
+    <p><strong>Symptom:</strong> <code>Errno 48: address already in use</code> on port 8081 during validation.</p>
+    <p><strong>Cause:</strong> an earlier collector process was still running.</p>
+    <p><strong>Fix:</strong> find it with <code>lsof -nP -iTCP:8081 -sTCP:LISTEN</code>, stop that process, and rerun. The validation was repeated cleanly.</p>
+    <p><strong>Lesson:</strong> a failed local test can be an environment problem, not a code problem. Clean up stray processes before drawing conclusions.</p>
+  </div>
+
+  <h2>How to read the logs</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Where to look</th></tr></thead>
+    <tbody>
+      <tr><td>Is the core container running?</td><td><code>docker ps | grep edge-platform-aws-core</code></td></tr>
+      <tr><td>Did the nucleus start?</td><td><code>docker logs --tail 50 edge-platform-aws-core</code> — look for <code>Launched Nucleus successfully</code>.</td></tr>
+      <tr><td>What is the nucleus doing?</td><td><code>docker exec edge-platform-aws-core tail -100 /greengrass/v2/logs/greengrass.log</code></td></tr>
+      <tr><td>What is the collector doing?</td><td><code>docker exec edge-platform-aws-core tail -100 /greengrass/v2/logs/io.github.doudouba0309.EdgePlatform.Collector.log</code></td></tr>
+      <tr><td>Did the deployment succeed?</td><td><code>aws greengrassv2 list-installed-components --core-device-thing-name edge-platform-sandbox-core --region ap-southeast-1 --profile edge-platform-admin</code></td></tr>
+      <tr><td>Is the core healthy?</td><td><code>aws greengrassv2 list-core-devices --region ap-southeast-1 --profile edge-platform-admin</code></td></tr>
+      <tr><td>Is the data arriving?</td><td>AWS IoT <strong>MQTT test client</strong>, subscribe to <code>edge/#</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The permission chain, visually</h2>
+  <div class="diagram">
+    <div class="box">Certificate<br><span class="small">attached to thing</span></div>
+    <div class="arrow">→</div>
+    <div class="box">IoT policy<br><span class="small">connect · MQTT · control plane · assume role</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Role alias<br><span class="small">points at TES role</span></div>
+    <div class="arrow">→</div>
+    <div class="box">TES role<br><span class="small">IoT · logs · S3</span></div>
+    <span class="small-note">Every arrow can fail independently. A 403 does not tell you which arrow without reading the nested cause.</span>
+  </div>
+
+  <h2>Lessons worth carrying forward</h2>
+  <ol>
+    <li><strong>Use exact names.</strong> <code>aarch64</code> is not <code>arm64</code>; <code>iot:CredentialProvider</code> is not the data endpoint.</li>
+    <li><strong>Permissions are layered.</strong> IoT policy, role trust, role policy and component IPC access are four different gates.</li>
+    <li><strong>“Running” is not “working”.</strong> A process can start, connect to IPC and still be denied every publish.</li>
+    <li><strong>Read the whole error chain.</strong> The top-level message often says “download failed”; the nested cause names the exact missing permission.</li>
+    <li><strong>Versions are immutable.</strong> Bump; never overwrite. A stale invalid recipe can poison a clean-looking deployment.</li>
+    <li><strong>Clean state is a tool.</strong> When a core has accumulated invalid component recipes, a fresh root is faster than arguing with the cache.</li>
+    <li><strong>Test offline first.</strong> The image, collector, mTLS and replay tests catch most code problems before AWS enters the picture.</li>
+  </ol>
+
+  <h2>Quick troubleshooting table</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>First check</th></tr></thead>
+    <tbody>
+      <tr><td>Docker daemon error</td><td>Start Docker Desktop.</td></tr>
+      <tr><td><code>mosquitto_pub: command not found</code></td><td><code>brew install mosquitto</code>.</td></tr>
+      <tr><td><code>Address already in use</code></td><td>Stop the stale process on port 8081.</td></tr>
+      <tr><td>Core not healthy</td><td>Container logs; check certificate mount and endpoint env.</td></tr>
+      <tr><td>Deployment fails with no component version</td><td>Check platform names and that the component version exists.</td></tr>
+      <tr><td>Deployment fails downloading artifact</td><td>Check S3 object path and TES <code>GetObject</code>/<code>GetBucketLocation</code>.</td></tr>
+      <tr><td>Component runs but no messages</td><td>Check IPC authorization and the nucleus log; then the AWS policy <code>edge/*</code> grant.</td></tr>
+      <tr><td>Messages arrive but look wrong</td><td>Run <code>make check</code>; compare against the schema example.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Do not “fix” a 403 by adding wildcard permissions.</strong>
+    Find the exact missing action and resource. Wildcards hide the model and make a
+    real deployment harder to audit. The one deliberate broad grant here is the
+    Greengrass control-plane action set, because those APIs use many resource ARNs.
+  </div>
+
+  <nav class="book-nav">
+    <a href="05-rebuild-aws.html">← Part 5</a>
+    <a class="next" href="07-status.html">Part 7 — Status and next →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 6 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

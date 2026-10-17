@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 1 — The problem | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 1</p>
+  <h1>The problem: factory data is trapped</h1>
+  <p class="lede">
+    A factory already knows a great deal about itself. The trouble is getting that
+    knowledge out of the factory reliably, cheaply and without opening a hole in
+    the plant network.
+  </p>
+
+  <h2>Start with a real factory floor</h2>
+  <p>
+    Picture a production line. A programmable logic controller (PLC) reads
+    temperature, pressure, motor speed and dozens of other values. A sensor may
+    report every second. Some equipment speaks <strong>Modbus</strong>, some speaks
+    <strong>OPC UA</strong>, some speaks plain <strong>MQTT</strong>. Vendors use
+    different names, units, register layouts and quirks.
+  </p>
+  <p>
+    The people who run the line want dashboards, alerts and history in the cloud.
+    The people who protect the plant do not want the cloud to reach directly into
+    the control network. And the network itself is not perfect: cellular drops,
+    firewalls reboot, switches get unplugged, and maintenance windows happen.
+  </p>
+
+  <div class="callout">
+    <strong>The central idea.</strong>
+    Put a small, dependable computer at the edge of the plant. Let it speak the
+    local protocols, translate everything into one shape, hold on to data when the
+    uplink is down, and send it north to AWS when it can.
+  </div>
+
+  <h2>Why not send every reading straight to AWS?</h2>
+  <p>Three practical reasons:</p>
+  <ol>
+    <li><strong>Cost.</strong> AWS IoT Core charges per message. Sending one message per sensor reading is wasteful when you can send one carefully packed batch.</li>
+    <li><strong>Reliability.</strong> A factory link can disappear for minutes or hours. If the gateway does not buffer, the data is simply gone.</li>
+    <li><strong>Security and control.</strong> The cloud should not need a route into the plant control network. The gateway makes the outbound connection; nothing needs to connect inward.</li>
+  </ol>
+
+  <p>
+    The gateway is therefore a <em>translator, packer, outbox and sender</em>, not a
+    miniature data centre.
+  </p>
+
+  <h2>The four jobs of the edge gateway</h2>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>1. Speak local protocols</h3>
+      <p>Read from PLCs and sensors using whatever they already speak. This is called the <strong>southbound</strong> side.</p>
+    </div>
+    <div class="tile">
+      <h3>2. Normalise</h3>
+      <p>Turn every reading into the same small record: device, metric, value, time, quality and origin.</p>
+    </div>
+    <div class="tile">
+      <h3>3. Pack and protect</h3>
+      <p>Group readings into batches, keep a bounded queue in memory, and write to a disk outbox when the uplink is down.</p>
+    </div>
+    <div class="tile">
+      <h3>4. Send north</h3>
+      <p>Deliver to AWS through the Greengrass nucleus, which owns the certificate and the secure connection.</p>
+    </div>
+  </div>
+
+  <h2>The cloud pieces, in plain language</h2>
+  <table>
+    <thead><tr><th>Piece</th><th>What it does</th><th>Analogy</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AWS IoT Core</strong></td><td>Receives MQTT messages from devices and routes them to other services.</td><td>A secure mailbox.</td></tr>
+      <tr><td><strong>AWS IoT Greengrass</strong></td><td>Runs a small runtime on the gateway. It manages components, owns the device identity, connects to IoT Core and can queue messages.</td><td>A local postmaster who works for the mailbox company.</td></tr>
+      <tr><td><strong>Greengrass nucleus</strong></td><td>The core software of Greengrass: starts components, manages the secure connection and the local IPC socket.</td><td>The postmaster’s office.</td></tr>
+      <tr><td><strong>Greengrass component</strong></td><td>An installable bundle of software and a recipe. Our collector is one component.</td><td>A worker with an instruction card.</td></tr>
+      <tr><td><strong>Amazon S3</strong></td><td>Stores the component ZIP and other files.</td><td>A shelf in the cloud.</td></tr>
+      <tr><td><strong>AWS IAM</strong></td><td>Defines who may do what.</td><td>The keycard system.</td></tr>
+      <tr><td><strong>AWS IoT policy</strong></td><td>Limits what a specific device certificate may publish, subscribe to and connect as.</td><td>The postmaster’s written permissions.</td></tr>
+      <tr><td><strong>TES role</strong></td><td>The token exchange role: the identity the nucleus assumes to talk to AWS services such as S3 and CloudWatch.</td><td>A temporary visitor badge.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The constraints that shaped everything</h2>
+  <p>
+    The design is not arbitrary. It follows from a small number of hard constraints:
+  </p>
+  <table>
+    <thead><tr><th>Constraint</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td>A gateway may have as little as 1 GB of RAM.</td><td>No web framework, no unbounded queue, no heavy runtime. The queue and spool have explicit budgets.</td></tr>
+      <tr><td>The uplink is intermittent.</td><td>Store-and-forward is mandatory. Ordering must be preserved: once anything is in the outbox, new batches queue behind it.</td></tr>
+      <tr><td>Two processor families must be supported.</td><td>Tier 1 is arm64 and x86_64. Both are built and smoke-tested.</td></tr>
+      <tr><td>Devices may be untouched for years.</td><td>Few dependencies, a health endpoint with no framework, and an image with a pinned base.</td></tr>
+      <tr><td>One image should serve many sites.</td><td>The image is generic. Site-specific protocol work belongs in a component or configuration, not in a new image.</td></tr>
+      <tr><td>The cloud must not hold the plant’s keys.</td><td>The component never stores AWS credentials. The nucleus owns the certificate and the connection.</td></tr>
+      <tr><td>Data must stay understandable.</td><td>One frozen wire format, one topic scheme and a schema that tests can defend.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why a “frozen” data contract matters</h2>
+  <p>
+    Imagine every department inventing its own parcel shape. The mailroom would
+    need a different sorting machine for each one. In the same way, if OPC UA data
+    had one JSON shape and Modbus data another, every downstream dashboard, rule
+    and database would need special cases.
+  </p>
+  <p>
+    So the project freezes a single shape called <strong>Sample</strong>, and a
+    group of samples called a <strong>Batch</strong>. Until that shape is
+    deliberately changed and versioned, every protocol must fit into it. This is
+    the single most important design decision in the project.
+  </p>
+
+  <h2>What “done” means at this stage</h2>
+  <p>The project is built in layers, and each layer has a testable finish line:</p>
+  <ul class="checklist">
+    <li>A developer can install the project and run its checks.</li>
+    <li>A collector can read a synthetic source, batch readings and log them.</li>
+    <li>The same collector can publish over mutual TLS and survive an outage.</li>
+    <li>An image can boot on both Tier 1 architectures and pass a smoke test.</li>
+    <li>A Greengrass component can be built, published and deployed.</li>
+    <li>A real message can be observed in AWS IoT Core.</li>
+  </ul>
+  <p>
+    All six are now true. What is <em>not</em> yet true is the factory-floor part:
+    reading real Modbus and OPC UA equipment. That is the next phase, not a hidden
+    part of this one.
+  </p>
+
+  <div class="callout warn">
+    <strong>Do not confuse the proof with production.</strong>
+    The current source is a deterministic pretend sensor. The AWS account is a
+    sandbox. The component is a real deployment, but no real machine has been
+    connected, and no production security review has happened.
+  </div>
+
+  <nav class="book-nav">
+    <a href="index.html">← Contents</a>
+    <a class="next" href="02-design.html">Part 2 — The design →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 1 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

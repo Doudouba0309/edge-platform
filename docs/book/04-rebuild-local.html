@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 4 — Rebuild locally | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 4</p>
+  <h1>Rebuild it on your own machine</h1>
+  <p class="lede">
+    This part takes you from a fresh clone to a working collector, a tested image
+    and a packaged Greengrass component. No AWS account is required.
+  </p>
+
+  <div class="callout">
+    <strong>How to use this part.</strong>
+    Copy one command block at a time. Wait for it to finish. Compare the output
+    with the “expected” box before moving on. If something fails, jump to Part 6.
+  </div>
+
+  <h2>1. What you need</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>Why</th><th>Check</th></tr></thead>
+    <tbody>
+      <tr><td>A Mac or Linux machine</td><td>The commands assume a Unix shell.</td><td><code>uname -s</code></td></tr>
+      <tr><td>Git</td><td>To clone the repository.</td><td><code>git --version</code></td></tr>
+      <tr><td><code>uv</code></td><td>Creates the Python environment and builds the wheel.</td><td><code>uv --version</code></td></tr>
+      <tr><td><code>make</code></td><td>Runs the project gates.</td><td><code>make --version</code></td></tr>
+      <tr><td>Docker Desktop</td><td>Runs the image tests and the local broker.</td><td><code>docker info</code></td></tr>
+      <tr><td>Mosquitto clients</td><td>Required only for <code>make verify</code>.</td><td><code>mosquitto_sub -h</code></td></tr>
+      <tr><td>Python 3.12</td><td>The runtime baseline.</td><td><code>python3 --version</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>On macOS, install the missing tools with Homebrew:</p>
+  <pre><code>brew install uv mosquitto
+brew install --cask docker</code></pre>
+  <p class="small">Open Docker Desktop once and wait until it says it is running.</p>
+
+  <h2>2. Get the repository</h2>
+  <pre><code>git clone https://github.com/Doudouba0309/edge-platform.git
+cd edge-platform</code></pre>
+  <p>You are in the repository root when <code>ls</code> shows <code>Makefile</code>, <code>src/</code>, <code>docs/</code> and <code>Dockerfile</code>.</p>
+
+  <h2>3. Create the Python environment</h2>
+  <pre><code>make install</code></pre>
+  <p>
+    This creates <code>.venv/</code> and installs the runtime plus the development
+    tools. It is safe to run again; it reuses the existing environment.
+  </p>
+  <div class="callout">
+    <strong>What “environment” means.</strong>
+    A private folder of Python packages for this project. It keeps the project’s
+    libraries separate from the rest of your computer.
+  </div>
+
+  <h2>4. Run the fast checks</h2>
+  <pre><code>make check</code></pre>
+  <p>This runs four things:</p>
+  <ol>
+    <li><strong>Ruff</strong> — formatting and lint rules.</li>
+    <li><strong>mypy</strong> — strict type checking.</li>
+    <li><strong>pytest</strong> — the unit and contract tests.</li>
+    <li><strong>Secret guard</strong> — fails if a tracked file looks like a key or credential.</li>
+  </ol>
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    Ruff and mypy report no issues, and pytest prints
+    <code>134 passed</code> (the number can grow as tests are added).
+    The secret guard prints <code>clean</code>.
+  </div>
+
+  <h2>5. Run the collector by hand</h2>
+  <p>
+    The default configuration uses a synthetic sensor and the log sink. Nothing
+    leaves your computer.
+  </p>
+  <pre><code>.venv/bin/edge-collector --config config/collector.yaml</code></pre>
+  <p>Leave it running. In a second terminal, ask it three questions:</p>
+  <pre><code>curl -s http://127.0.0.1:8081/healthz
+curl -s http://127.0.0.1:8081/readyz
+curl -s http://127.0.0.1:8081/stats</code></pre>
+
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>ok</code> from <code>/healthz</code>, <code>ready</code> from
+    <code>/readyz</code>, and JSON from <code>/stats</code> with a healthy
+    <code>log</code> sink and a non-zero <code>batches_sent</code>.
+  </div>
+
+  <p>In the first terminal, you should see a line like:</p>
+  <pre><code>INFO edge_collector.sinks.log: batch #1 device=plc-line-1 samples=2 bytes=526 sources=['sim']</code></pre>
+  <p>Stop it with <kbd>Ctrl</kbd>+<kbd>C</kbd>. It should flush and exit promptly.</p>
+
+  <div class="callout warn">
+    <strong>If you see “address already in use” on port 8081.</strong>
+    Another collector is already running. Find it with
+    <code>lsof -nP -iTCP:8081 -sTCP:LISTEN</code>, stop that process, and run the
+    collector again.
+  </div>
+
+  <h2>6. Test the real transport, outage and replay</h2>
+  <pre><code>make verify</code></pre>
+  <p>
+    This is the most important collector test. It starts a local Mosquitto broker
+    that requires a client certificate, runs the collector against it, stops the
+    broker, confirms the batch is spooled, restarts the broker and confirms the
+    batch is replayed.
+  </p>
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>spooled while offline: 1 batch(es)</code> and a final line beginning
+    <code>PASS: mutual TLS telemetry, schema, outage, replay, RSS …</code>.
+  </div>
+
+  <h2>7. Build and boot the image</h2>
+  <p>
+    The image is the bottom layer: Ubuntu 24.04, Python 3.12, the collector and a
+    non-root user. This test builds it, boots it, publishes over mutual TLS,
+    validates the schema, checks memory, and stops it.
+  </p>
+  <pre><code>make smoke</code></pre>
+  <p>On Apple Silicon, a faster single-architecture run is:</p>
+  <pre><code>PLATFORMS=linux/arm64 make smoke</code></pre>
+  <p>On Intel:</p>
+  <pre><code>PLATFORMS=linux/amd64 make smoke</code></pre>
+
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>PASS: arm64 boot, mutual TLS, schema, RSS, SIGTERM</code> (and/or the
+    amd64 line), then <code>PASS: linux/arm64 …</code>.
+    The first run can take several minutes because it builds base layers.
+  </div>
+
+  <p>Inspect the image afterwards:</p>
+  <pre><code>docker image ls | grep edge-platform-base
+docker history edge-platform-base:arm64 | head -20</code></pre>
+
+  <h2>8. Build the Greengrass component</h2>
+  <pre><code>GG_BUCKET=edge-platform-sandbox-&lt;account-id&gt;-ap-southeast-1 \
+GG_ACCOUNT_ID=&lt;account-id&gt; \
+GG_THING_NAME=edge-platform-sandbox-core \
+GG_ROLE_ALIAS=edge-platform-sandbox-TESRoleAlias \
+make component</code></pre>
+  <p>
+    This builds a wheel for the collector, downloads Linux wheels for arm64 and
+    x86_64, zips them, and renders the recipe and IoT policy.
+  </p>
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>build/component/EdgeCollector-1.0.4.zip</code> (about 14 MB),
+    <code>recipe.yaml</code> and <code>iot-policy.json</code>.
+  </div>
+  <p>Inspect what was produced:</p>
+  <pre><code>ls -lh build/component
+unzip -l build/component/EdgeCollector-1.0.4.zip | head -20
+grep -n -A6 'accessControl' build/component/recipe.yaml</code></pre>
+  <p class="small">
+    The version may change when a new immutable component version is published.
+    The build script default is the latest version in the repository.
+  </p>
+
+  <h2>9. Optional: prove the nucleus still works offline</h2>
+  <pre><code>make nucleus-smoke</code></pre>
+  <p>
+    This builds the nucleus image for both architectures and checks startup, the
+    IPC socket, identity reuse across a restart, and clean SIGTERM. It needs
+    Docker and is slower than the collector tests.
+  </p>
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>PASS: arm64 nucleus launch, IPC, identity reuse, SIGTERM</code> and the
+    equivalent amd64 line.
+  </div>
+
+  <h2>10. Optional: build the software inventory</h2>
+  <pre><code>make sbom</code></pre>
+  <p>
+    This generates CycloneDX SBOMs with Syft for the collector images. It is
+    optional for a rebuild, but it is part of the CI evidence. Run
+    <code>make sbom-nucleus</code> for the nucleus images.
+  </p>
+
+  <h2>What you have now</h2>
+  <ul class="checklist">
+    <li>A working Python environment and a passing test suite.</li>
+    <li>A collector that can log, publish over mTLS, spool and replay.</li>
+    <li>A bootable Tier 1 image.</li>
+    <li>A Greengrass component artifact, recipe and policy.</li>
+    <li>No AWS account required.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Do not skip <code>make verify</code>.</strong>
+    <code>make smoke</code> proves the image; <code>make verify</code> proves the
+    outage/replay behaviour that makes the gateway useful on a real factory
+    network.
+  </div>
+
+  <nav class="book-nav">
+    <a href="03-built.html">← Part 3</a>
+    <a class="next" href="05-rebuild-aws.html">Part 5 — Rebuild in AWS →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 4 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

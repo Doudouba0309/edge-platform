@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 3 — What was built | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 3</p>
+  <h1>What was built, in the order it happened</h1>
+  <p class="lede">
+    The project was not built in one heroic commit. It was built in small slices,
+    each with a finish line. This part is the honest build history and the map of
+    what now exists.
+  </p>
+
+  <h2>The short version</h2>
+  <div class="grid-3">
+    <div class="tile"><h3>Foundation</h3><p>Repository, design documents, operating manual and a frozen data contract.</p></div>
+    <div class="tile"><h3>Runtime</h3><p>Collector, batching, bounded queue, SQLite spool, health endpoints and mTLS MQTT.</p></div>
+    <div class="tile"><h3>Delivery</h3><p>Base image, CI, SBOMs, offline nucleus, IPC sink, component package and AWS proof.</p></div>
+  </div>
+
+  <h2>The 21-step build history</h2>
+  <table>
+    <thead><tr><th>#</th><th>Commit</th><th>What it added</th><th>Why it mattered</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>3e229de</code></td><td>Initial repository</td><td>A clean home for the project.</td></tr>
+      <tr><td>2</td><td><code>afde0a2</code></td><td>Proposal, roadmap and decision register</td><td>Recorded the architectural choices before code.</td></tr>
+      <tr><td>3</td><td><code>495c14b</code></td><td>Agent operating manual</td><td>Captured the rules, invariants, traps and never-run commands.</td></tr>
+      <tr><td>4</td><td><code>1e2607a</code></td><td>Frozen telemetry contract</td><td><code>Sample</code>/<code>Batch</code>, schema, IDs, topics and tests.</td></tr>
+      <tr><td>5</td><td><code>5972e07</code></td><td>Runtime core and health</td><td>Sources, pipeline, sinks, config, health and graceful shutdown.</td></tr>
+      <tr><td>6</td><td><code>2bbc1bc</code></td><td>Store-and-forward and mTLS smoke</td><td>SQLite spool, outage/replay proof and mutual TLS.</td></tr>
+      <tr><td>7</td><td><code>734e531</code></td><td>Tier 1 base image</td><td>Ubuntu 24.04, non-root, health check, both architectures.</td></tr>
+      <tr><td>8</td><td><code>03dc07b</code></td><td>Deterministic image smoke</td><td>Status counts no longer flaky across architectures.</td></tr>
+      <tr><td>9</td><td><code>a1a2fea</code></td><td>Make gates and per-commit CI</td><td>Every code/image change is checked automatically.</td></tr>
+      <tr><td>10</td><td><code>faa3e31</code></td><td>CycloneDX SBOMs</td><td>Software inventory for the images.</td></tr>
+      <tr><td>11</td><td><code>f2fe116</code></td><td>Offline Greengrass nucleus</td><td>Pinned nucleus 2.18.4, IPC socket, restart and SIGTERM proof.</td></tr>
+      <tr><td>12</td><td><code>a084f1e</code></td><td>AWS sandbox setup guide</td><td>Account creation through teardown, in HTML.</td></tr>
+      <tr><td>13</td><td><code>df2dfe3</code></td><td>CI cache and docs-only skip</td><td>Image layers cached; documentation changes stop rebuilding images.</td></tr>
+      <tr><td>14</td><td><code>c3af549</code></td><td>Account-id guidance</td><td>IAM user sign-in needs the 12-digit account id or an alias.</td></tr>
+      <tr><td>15</td><td><code>0a286a4</code></td><td>Component boundary note</td><td>There is one collector component; the IPC sink is code inside it.</td></tr>
+      <tr><td>16</td><td><code>fedbb21</code></td><td>Greengrass IPC sink</td><td>Collector can publish through the nucleus without AWS keys.</td></tr>
+      <tr><td>17</td><td><code>8cfd610</code></td><td>Secret guard and runtime baseline</td><td>Pre-commit + CI guard; Ubuntu 24.04 / Python 3.12 recorded.</td></tr>
+      <tr><td>18</td><td><code>5d927d0</code></td><td>Component packaging</td><td>Wheelhouse, recipe, policy template and drift tests.</td></tr>
+      <tr><td>19</td><td><code>3cff28f</code></td><td>Install the AWS extra</td><td>The wheelhouse had <code>awsiotsdk</code>, but the recipe did not install it.</td></tr>
+      <tr><td>20</td><td><code>e26c7a6</code></td><td>Make the component deploy to AWS</td><td>Fixed platform names, policy permissions, endpoints and IPC operation.</td></tr>
+      <tr><td>21</td><td><code>5c24f98</code></td><td>Testing and validation runbook</td><td>A plain-English way to verify image, collector and AWS data.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What exists in the repository now</h2>
+
+  <h3>The collector package</h3>
+  <table>
+    <thead><tr><th>Module</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><code>models.py</code></td><td><code>Sample</code>, <code>Batch</code>, quality, UTC handling, compact JSON.</td></tr>
+      <tr><td><code>identifiers.py</code></td><td>Gateway and device id grammar.</td></tr>
+      <tr><td><code>topics.py</code></td><td>The two frozen topic builders.</td></tr>
+      <tr><td><code>schema.py</code></td><td>Deterministic JSON Schema export.</td></tr>
+      <tr><td><code>config.py</code></td><td>YAML config, validation and sink selection.</td></tr>
+      <tr><td><code>pipeline.py</code></td><td>Bounded queue, batching, delivery, ordering, replay and stats.</td></tr>
+      <tr><td><code>spool.py</code></td><td>SQLite WAL outbox with a payload-byte budget.</td></tr>
+      <tr><td><code>sinks/base.py</code></td><td>The transport contract and <code>SinkUnavailable</code>.</td></tr>
+      <tr><td><code>sinks/log.py</code></td><td>Development sink.</td></tr>
+      <tr><td><code>sinks/mqtt.py</code>, <code>paho_sink.py</code></td><td>MQTT client, TLS, QoS 1, LWT and connection handling.</td></tr>
+      <tr><td><code>sinks/greengrass.py</code></td><td>Publishes through the Greengrass nucleus IPC socket.</td></tr>
+      <tr><td><code>sources/synthetic.py</code></td><td>Deterministic pretend sensor used until real adapters land.</td></tr>
+      <tr><td><code>health.py</code></td><td>Standard-library HTTP server for health, readiness and stats.</td></tr>
+      <tr><td><code>app.py</code></td><td>Wires config, source, pipeline, sink, spool, health and signals.</td></tr>
+      <tr><td><code>__main__.py</code></td><td>Command-line entry point.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The tests</h3>
+  <p>
+    At the time of writing, <code>make check</code> runs <strong>134 tests</strong>.
+    They cover models, schema drift, identifiers, config, synthetic source,
+    batching, queue overflow, spool ordering and budgets, sink failure/reconnect,
+    health, app wiring and the AWS artifact contract.
+  </p>
+
+  <h3>The delivery pieces</h3>
+  <ul>
+    <li><code>Dockerfile</code> — the pinned Ubuntu 24.04 base, non-root collector image.</li>
+    <li><code>nucleus/Dockerfile</code> — Ubuntu 24.04, OpenJDK 17, nucleus 2.18.4 and, after the AWS proof, Python 3.12 + venv.</li>
+    <li><code>nucleus/entrypoint.sh</code> — offline self-signed mode or AWS mode with mounted certificates.</li>
+    <li><code>deploy/greengrass/recipe.yaml.tmpl</code> — component recipe, two architectures, lifecycle and IPC access control.</li>
+    <li><code>deploy/aws/iot-policy.json.tmpl</code> — core IoT policy template.</li>
+    <li><code>scripts/build-component.sh</code> — wheelhouse, ZIP, rendered recipe and policy.</li>
+    <li><code>scripts/smoke-image.sh</code>, <code>smoke-local.sh</code>, <code>smoke-nucleus.sh</code> — the three smoke tests.</li>
+    <li><code>scripts/sbom.sh</code> — CycloneDX SBOM generation.</li>
+    <li><code>scripts/gen-test-certs.sh</code> — local test PKI.</li>
+    <li><code>scripts/check-secrets.sh</code> — tracked-path and content guard.</li>
+  </ul>
+
+  <h3>The operations and security pieces</h3>
+  <ul>
+    <li><code>Makefile</code> — install, hooks, format, lint, test, check, component, verify, smoke, SBOM and nucleus smoke.</li>
+    <li><code>.github/workflows/ci.yml</code> — check, component package, Tier 1 images and nucleus; buildx cache; docs-only skip.</li>
+    <li><code>.github/workflows/security.yml</code> — secret guard on every push, including docs-only changes.</li>
+    <li><code>.pre-commit-config.yaml</code> — private-key detector and the local secret guard.</li>
+    <li><code>docs/</code> — proposal, roadmap, decisions, AWS setup guide, testing guide and this handbook.</li>
+  </ul>
+
+  <h2>The AWS proof, step by step</h2>
+  <p>
+    The code alone was not enough. The team provisioned a real test core and
+    deployed the component. The proof took several attempts because each attempt
+    exposed a different missing permission or a platform mismatch.
+  </p>
+  <ol>
+    <li>Created a test thing, thing group and device certificate.</li>
+    <li>Created an IoT policy for the core: MQTT topics, Greengrass control-plane calls and permission to assume the token exchange role.</li>
+    <li>Created the TES role with a trust relationship for <code>credentials.iot.amazonaws.com</code>, plus an inline policy for IoT, logs, S3 object read and bucket location.</li>
+    <li>Created the role alias that the nucleus asks for credentials.</li>
+    <li>Built the nucleus image with Python 3.12 and <code>venv</code>, because the component installs its own Python environment.</li>
+    <li>Ran the core with the certificate, key, Amazon root CA and the correct data/credentials endpoints.</li>
+    <li>Built the component ZIP with Linux wheels for arm64 and x86_64; uploaded it to S3.</li>
+    <li>Created component version 1.0.4 and deployed it to the thing.</li>
+    <li>Subscribed with a read-only observer certificate and saw a real batch arrive.</li>
+  </ol>
+
+  <div class="callout ok">
+    <strong>The observed proof.</strong>
+    Component <code>io.github.doudouba0309.EdgePlatform.Collector</code> version
+    <code>1.0.4</code> was <code>RUNNING</code> on
+    <code>edge-platform-sandbox-core</code>, and a schema-1.0 batch arrived on
+    <code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code>.
+  </div>
+
+  <h2>What did not exist when the project started</h2>
+  <table>
+    <thead><tr><th>Now</th><th>Then</th></tr></thead>
+    <tbody>
+      <tr><td>A frozen JSON schema and tests</td><td>Only a design idea.</td></tr>
+      <tr><td>A working collector with a spool</td><td>Nothing runnable.</td></tr>
+      <tr><td>Two architecture images and CI</td><td>No build or regression safety.</td></tr>
+      <tr><td>A Greengrass component</td><td>No deployment unit.</td></tr>
+      <tr><td>A real AWS message</td><td>A design intention.</td></tr>
+      <tr><td>A secret guard and security workflow</td><td>A rule in a document.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What is still only a promise</h2>
+  <ul>
+    <li>Reading a real OPC UA server or Modbus PLC.</li>
+    <li>A repeatable, scripted AWS provision/publish/deploy/teardown flow.</li>
+    <li>Production hardening, fleet provisioning, certificate rotation and support.</li>
+    <li>Teardown of the current sandbox.</li>
+  </ul>
+
+  <nav class="book-nav">
+    <a href="02-design.html">← Part 2</a>
+    <a class="next" href="04-rebuild-local.html">Part 4 — Rebuild locally →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 3 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

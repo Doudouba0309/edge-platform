@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 5 — Rebuild in AWS | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 5</p>
+  <h1>Rebuild the AWS proof</h1>
+  <p class="lede">
+    This is the advanced part. It creates real AWS resources, runs a Greengrass
+    core, publishes the component and verifies a message in IoT Core. Do it only
+    in a dedicated sandbox account.
+  </p>
+
+  <div class="callout danger">
+    <strong>This part mutates AWS.</strong>
+    It creates a thing, certificate, policies, IAM role and billable resources.
+    Use a disposable sandbox account, never production. The current manual steps
+    are the exact sequence used for the proof; a one-command provisioning script
+    is still a future improvement.
+  </div>
+
+  <h2>1. Start with the account</h2>
+  <p>
+    If the account does not exist yet, follow the separate
+    <a href="../aws-sandbox-setup.html">AWS Sandbox Setup</a> guide first. At a
+    minimum you need:
+  </p>
+  <ul class="checklist">
+    <li>A dedicated, non-production AWS account.</li>
+    <li>MFA on root and no root access keys.</li>
+    <li>A small budget alarm.</li>
+    <li>A named admin identity with MFA — the proof used <code>edge-platform-admin</code>.</li>
+    <li>AWS CLI v2 configured with that profile.</li>
+    <li>Region <code>ap-southeast-1</code>.</li>
+    <li>One private S3 bucket.</li>
+  </ul>
+
+  <p>Check the identity and region before doing anything else:</p>
+  <pre><code>aws sts get-caller-identity --profile edge-platform-admin
+aws configure get region --profile edge-platform-admin</code></pre>
+
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    The account id and an <code>edge-platform-admin</code> ARN; region
+    <code>ap-southeast-1</code>.
+  </div>
+
+  <h2>2. Set the shell variables</h2>
+  <p>
+    The commands below use variables so that no account id or secret is pasted
+    into the document. Run these in the same terminal:
+  </p>
+  <pre><code>PROFILE=edge-platform-admin
+REGION=ap-southeast-1
+ACCOUNT_ID="$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text)"
+THING=edge-platform-sandbox-core
+GROUP=edge-platform-sandbox
+POLICY=edge-platform-sandbox-core-policy
+ROLE=edge-platform-sandbox-TESRole
+ROLE_ALIAS=edge-platform-sandbox-TESRoleAlias
+BUCKET="edge-platform-sandbox-${ACCOUNT_ID}-${REGION}"
+COMPONENT=io.github.doudouba0309.EdgePlatform.Collector
+VERSION=1.0.4
+
+echo "$ACCOUNT_ID" "$BUCKET"</code></pre>
+
+  <p>Create the bucket only if it does not exist. If it already exists, skip this command:</p>
+  <pre><code>aws s3api create-bucket \
+  --bucket "$BUCKET" \
+  --region "$REGION" \
+  --create-bucket-configuration LocationConstraint="$REGION" \
+  --profile "$PROFILE"
+
+aws s3api put-public-access-block \
+  --bucket "$BUCKET" \
+  --public-access-block-configuration \
+    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true \
+  --profile "$PROFILE"</code></pre>
+
+  <h2>3. Create the thing and group</h2>
+  <pre><code>aws iot create-thing --thing-name "$THING" --profile "$PROFILE"
+
+aws iot create-thing-group --thing-group-name "$GROUP" --profile "$PROFILE"
+
+aws iot add-thing-to-thing-group \
+  --thing-name "$THING" --thing-group-name "$GROUP" --profile "$PROFILE"</code></pre>
+
+  <p>
+    The <strong>thing</strong> is the cloud record of this gateway. The
+    <strong>thing group</strong> is a convenient way to target deployments.
+  </p>
+
+  <h2>4. Create the device certificate and root CA</h2>
+  <pre><code>mkdir -p certs/sandbox
+
+curl -fsSL https://www.amazontrust.com/repository/AmazonRootCA1.pem \
+  -o certs/sandbox/AmazonRootCA1.pem
+
+aws iot create-keys-and-certificate --set-as-active \
+  --certificate-pem-outfile certs/sandbox/cert.pem \
+  --private-key-outfile certs/sandbox/private.key \
+  --public-key-outfile certs/sandbox/public.key \
+  --profile "$PROFILE"</code></pre>
+
+  <p>
+    The output contains the certificate ARN. Save it in a shell variable:
+  </p>
+  <pre><code>CERT_ARN=arn:aws:iot:${REGION}:${ACCOUNT_ID}:cert/&lt;the-id-from-the-output&gt;</code></pre>
+
+  <p>
+    The private key is a secret. It belongs in <code>certs/</code>, which is
+    git-ignored. Never paste it into a document or a chat.
+  </p>
+
+  <h2>5. Create the core IoT policy</h2>
+  <p>
+    The policy is not just MQTT. The core must also call the Greengrass control
+    plane and assume its token exchange role. The repository template is
+    <code>deploy/aws/iot-policy.json.tmpl</code>; the build script renders it with
+    the account, region, thing and role alias.
+  </p>
+
+  <pre><code>GG_BUCKET="$BUCKET" \
+GG_ACCOUNT_ID="$ACCOUNT_ID" \
+GG_THING_NAME="$THING" \
+GG_ROLE_ALIAS="$ROLE_ALIAS" \
+make component</code></pre>
+
+  <p>Then create and attach the policy:</p>
+  <pre><code>aws iot create-policy \
+  --policy-name "$POLICY" \
+  --policy-document file://build/component/iot-policy.json \
+  --profile "$PROFILE"
+
+aws iot attach-policy \
+  --policy-name "$POLICY" --target "$CERT_ARN" --profile "$PROFILE"
+
+aws iot attach-thing-principal \
+  --thing-name "$THING" --principal "$CERT_ARN" --profile "$PROFILE"</code></pre>
+
+  <div class="callout warn">
+    <strong>Three permission families are required.</strong>
+    MQTT for telemetry, Greengrass control-plane calls for deployments, and
+    <code>iot:AssumeRoleWithCertificate</code> for the role alias. Missing any one
+    produces a different, confusing error.
+  </div>
+
+  <h2>6. Create the token exchange role</h2>
+  <p>
+    The nucleus does not store AWS access keys. It asks AWS IoT for temporary
+    credentials by presenting its certificate and a role alias. That role is called
+    the token exchange role, or TES role.
+  </p>
+
+  <pre><code>cat &gt; certs/sandbox/trust.json &lt;&lt;'JSON'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {"Service": "credentials.iot.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+JSON
+
+aws iam create-role \
+  --role-name "$ROLE" \
+  --assume-role-policy-document file://certs/sandbox/trust.json \
+  --profile "$PROFILE"</code></pre>
+
+  <p>Create an inline policy with the permissions the core needs:</p>
+  <pre><code>cat &gt; certs/sandbox/tes-policy.json &lt;&lt;JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Receive"],
+      "Resource": ["arn:aws:iot:${REGION}:${ACCOUNT_ID}:topic/\$aws/things/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Subscribe"],
+      "Resource": ["arn:aws:iot:${REGION}:${ACCOUNT_ID}:topicfilter/\$aws/things/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Connect"],
+      "Resource": ["arn:aws:iot:${REGION}:${ACCOUNT_ID}:client/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:GetThingShadow", "iot:UpdateThingShadow", "iot:DeleteThingShadow"],
+      "Resource": ["arn:aws:iot:${REGION}:${ACCOUNT_ID}:thing/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": ["arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:/aws/greengrass/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:GetBucketLocation"],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}",
+        "arn:aws:s3:::${BUCKET}/*"
+      ]
+    }
+  ]
+}
+JSON
+
+aws iam put-role-policy \
+  --role-name "$ROLE" \
+  --policy-name GreengrassV2TokenExchangeRoleAccess \
+  --policy-document file://certs/sandbox/tes-policy.json \
+  --profile "$PROFILE"</code></pre>
+
+  <p>Create the role alias that the nucleus asks for:</p>
+  <pre><code>aws iot create-role-alias \
+  --role-alias "$ROLE_ALIAS" \
+  --role-arn "arn:aws:iam::${ACCOUNT_ID}:role/${ROLE}" \
+  --credential-duration-seconds 3600 \
+  --profile "$PROFILE"</code></pre>
+
+  <div class="callout warn">
+    <strong>Why both a bucket ARN and a bucket/* resource?</strong>
+    <code>s3:GetBucketLocation</code> applies to the bucket itself;
+    <code>s3:GetObject</code> applies to the object. Using only the object path
+    produced a 403 during the proof.
+  </div>
+
+  <h2>7. Get the two IoT endpoints</h2>
+  <p>
+    The <strong>data</strong> endpoint and the <strong>credentials</strong>
+    endpoint are different hostnames. Do not derive one from the other.
+  </p>
+  <pre><code>DATA_ENDPOINT="$(aws iot describe-endpoint \
+  --endpoint-type iot:Data-ATS --region "$REGION" --profile "$PROFILE" \
+  --query endpointAddress --output text)"
+
+CRED_ENDPOINT="$(aws iot describe-endpoint \
+  --endpoint-type iot:CredentialProvider --region "$REGION" --profile "$PROFILE" \
+  --query endpointAddress --output text)"
+
+echo "$DATA_ENDPOINT"
+echo "$CRED_ENDPOINT"</code></pre>
+
+  <p>
+    The data endpoint looks like
+    <code>xxxxx-ats.iot.ap-southeast-1.amazonaws.com</code>. The credentials
+    endpoint is a different prefix and looks like
+    <code>yyyyy.credentials.iot.ap-southeast-1.amazonaws.com</code>.
+  </p>
+
+  <h2>8. Build the AWS-mode core image</h2>
+  <p>
+    The nucleus image includes Java, the nucleus, Python 3.12 and
+    <code>venv</code>. The component installs its own Python environment, so the
+    core must be able to create a virtual environment.
+  </p>
+  <pre><code>docker buildx build \
+  --platform linux/arm64 \
+  --load \
+  -f nucleus/Dockerfile \
+  -t edge-platform-nucleus:aws-arm64 .</code></pre>
+  <p>On Intel, use <code>linux/amd64</code> and tag it <code>aws-amd64</code>.</p>
+
+  <h2>9. Start the core with the real identity</h2>
+  <pre><code>docker volume create edge-platform-aws-core-root
+
+docker run -d --init --name edge-platform-aws-core \
+  --platform linux/arm64 \
+  -v edge-platform-aws-core-root:/greengrass/v2 \
+  -v "$PWD/certs/sandbox:/certs:ro" \
+  -e GG_MODE=aws \
+  -e GG_THING_NAME="$THING" \
+  -e GG_CERT_DIR=/certs \
+  -e AWS_REGION="$REGION" \
+  -e GG_TES_ROLE_ALIAS="$ROLE_ALIAS" \
+  -e GG_IOT_DATA_ENDPOINT="$DATA_ENDPOINT" \
+  -e GG_IOT_CRED_ENDPOINT="$CRED_ENDPOINT" \
+  edge-platform-nucleus:aws-arm64</code></pre>
+
+  <p>Check the logs and the cloud status:</p>
+  <pre><code>docker logs --tail 30 edge-platform-aws-core
+
+aws greengrassv2 list-core-devices \
+  --region "$REGION" --profile "$PROFILE"</code></pre>
+
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    <code>Launched Nucleus successfully</code> in the container log, and the core
+    device <code>edge-platform-sandbox-core</code> in status
+    <code>HEALTHY</code>.
+  </div>
+
+  <p>
+    If the core is not healthy, stop here and read Part 6. Do not continue with a
+    broken core; every later error will be harder to interpret.
+  </p>
+
+  <h2>10. Upload and publish the component</h2>
+  <p>
+    The component recipe points at an S3 object. Upload the exact ZIP that the
+    recipe names, then create the immutable component version.
+  </p>
+  <pre><code>KEY="${COMPONENT}/${VERSION}/EdgeCollector-${VERSION}.zip"
+
+aws s3 cp \
+  "build/component/EdgeCollector-${VERSION}.zip" \
+  "s3://${BUCKET}/${KEY}" \
+  --profile "$PROFILE" --region "$REGION"
+
+aws greengrassv2 create-component-version \
+  --inline-recipe fileb://build/component/recipe.yaml \
+  --region "$REGION" --profile "$PROFILE"</code></pre>
+
+  <div class="callout">
+    <strong>Component versions are immutable.</strong>
+    If the recipe or artifact changes, bump the version. Never overwrite a
+    published version in place. The proof ended at <code>1.0.4</code>.
+  </div>
+
+  <h2>11. Deploy to the core</h2>
+  <pre><code>TARGET="arn:aws:iot:${REGION}:${ACCOUNT_ID}:thing/${THING}"
+
+aws greengrassv2 create-deployment \
+  --target-arn "$TARGET" \
+  --deployment-name edge-platform-sandbox-collector-1 \
+  --components "{\"${COMPONENT}\":{\"componentVersion\":\"${VERSION}\"}}" \
+  --deployment-policies '{"failureHandlingPolicy":"ROLLBACK","componentUpdatePolicy":{"action":"NOTIFY_COMPONENTS","timeoutInSeconds":60}}' \
+  --region "$REGION" --profile "$PROFILE"</code></pre>
+
+  <p>Wait for completion:</p>
+  <pre><code>aws greengrassv2 list-deployments \
+  --target-arn "$TARGET" --history-filter ALL \
+  --region "$REGION" --profile "$PROFILE"
+
+aws greengrassv2 list-installed-components \
+  --core-device-thing-name "$THING" \
+  --region "$REGION" --profile "$PROFILE"</code></pre>
+
+  <div class="callout ok">
+    <strong>Expected.</strong>
+    The deployment reaches <code>COMPLETED</code> (some versions report
+    <code>SUCCEEDED</code>), and the collector appears with
+    <code>lifecycleState: RUNNING</code>.
+  </div>
+
+  <h2>12. Verify the real message</h2>
+  <p>
+    The simplest way is the AWS IoT console: <strong>IoT Core → Test → MQTT test
+    client → subscribe to <code>edge/#</code></strong>. The collector publishes
+    about once per second.
+  </p>
+  <pre><code>edge/edge-platform-sandbox-core/plc-line-1/telemetry
+{
+  "schema_version": "1.0",
+  "gateway_id": "edge-platform-sandbox-core",
+  "device_id": "plc-line-1",
+  "seq": 20,
+  "samples": [
+    {
+      "device_id": "plc-line-1",
+      "metric": "temperature",
+      "value": 23.5,
+      "unit": "degC",
+      "quality": "good"
+    }
+  ]
+}</code></pre>
+
+  <p>
+    For a terminal observer, create a separate certificate and a read-only policy
+    for <code>client/edge-platform-sandbox-observer</code>,
+    <code>topicfilter/edge/#</code> and <code>topic/edge/*</code>, then:
+  </p>
+  <pre><code>mosquitto_sub \
+  -h "$DATA_ENDPOINT" -p 8883 \
+  --cafile certs/sandbox/AmazonRootCA1.pem \
+  --cert certs/sandbox/observer.cert.pem \
+  --key certs/sandbox/observer.private.key \
+  -i edge-platform-sandbox-observer \
+  -t 'edge/#' -C 1 -W 60 -v</code></pre>
+
+  <h2>13. Teardown — not yet automated</h2>
+  <div class="callout danger">
+    <strong>Do not run a blind teardown.</strong>
+    Deleting a certificate or role that is still attached to a live core can leave
+    confusing state. The current sandbox is intentionally still live. A repeatable
+    teardown script is a future task; until then, remove in this order and confirm
+    each step.
+  </div>
+  <ol>
+    <li>Stop and remove the local core container and volume.</li>
+    <li>Create a deployment that removes the collector, or delete the deployment target after the core is stopped.</li>
+    <li>Delete the component versions (old versions first, latest last).</li>
+    <li>Detach and delete the observer policy and certificate.</li>
+    <li>Detach and delete the core policy and certificate.</li>
+    <li>Delete the role alias, inline role policy and role.</li>
+    <li>Remove the thing from its group; delete the thing and group.</li>
+    <li>Empty and delete the S3 bucket (or remove only the component prefix).</li>
+    <li>Delete CloudWatch log groups created by the test.</li>
+    <li>Delete local <code>certs/sandbox/</code> if it is no longer needed.</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Why this chapter is long.</strong>
+    The AWS path is not one API call. It is a chain of identity, permission and
+    networking pieces. Each piece exists for a reason; Part 6 explains what each
+    failure looked like in practice.
+  </div>
+
+  <nav class="book-nav">
+    <a href="04-rebuild-local.html">← Part 4</a>
+    <a class="next" href="06-lessons.html">Part 6 — The real failures →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 5 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

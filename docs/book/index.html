@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav>
+    <a href="#contents">Contents</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="appendix.html">Reference</a>
+  </nav>
+</header>
+
+<main class="page">
+
+<div class="cover">
+  <div class="cover-mark">E</div>
+  <p class="chapter-label">A field guide for builders and operators</p>
+  <h1>From a factory sensor to a message in AWS</h1>
+  <p class="lede">
+    The complete, plain-English story of the Edge Platform: what it is, why it
+    is shaped this way, what has actually been built, and how to rebuild it from
+    an empty laptop and a fresh AWS account.
+  </p>
+  <div class="meta">
+    <span>Snapshot: 17 October 2026</span>
+    <span>9 parts</span>
+    <span>Written for non-specialists</span>
+    <span>Commands tested on macOS</span>
+  </div>
+</div>
+
+<div class="snapshot">
+  <h2>Where the project stands today</h2>
+  <p><strong>Working:</strong> the collector, the image, the store-and-forward spool, the Greengrass IPC sink, the component package and the AWS data path.</p>
+  <p><strong>Proven:</strong> component 1.0.4 was deployed to a real Greengrass core and a telemetry batch was observed in AWS IoT Core.</p>
+  <p><strong>Not done:</strong> real Modbus/OPC UA devices, a repeatable AWS setup script, and teardown of the live sandbox.</p>
+</div>
+
+<h2 id="contents">Contents</h2>
+<p>Read in order for the full story, or jump to the part you need.</p>
+
+<div class="chapter-list">
+  <a class="chapter-card" href="01-problem.html">
+    <b>Part 1</b>
+    The problem
+    <span>Factories, sensors, unreliable networks, and why a gateway exists.</span>
+  </a>
+  <a class="chapter-card" href="02-design.html">
+    <b>Part 2</b>
+    The design
+    <span>The frozen data contract, batching, spooling, topics, images and components.</span>
+  </a>
+  <a class="chapter-card" href="03-built.html">
+    <b>Part 3</b>
+    What was built
+    <span>The actual history, file by file, test by test, including the AWS proof.</span>
+  </a>
+  <a class="chapter-card" href="04-rebuild-local.html">
+    <b>Part 4</b>
+    Rebuild locally
+    <span>From clone to tests, images, collector and component, with expected output.</span>
+  </a>
+  <a class="chapter-card" href="05-rebuild-aws.html">
+    <b>Part 5</b>
+    Rebuild in AWS
+    <span>Account, identities, permissions, core, publish, deploy and verify.</span>
+  </a>
+  <a class="chapter-card" href="06-lessons.html">
+    <b>Part 6</b>
+    The real failures
+    <span>Every confusing error we hit, why it happened, and the fix.</span>
+  </a>
+  <a class="chapter-card" href="07-status.html">
+    <b>Part 7</b>
+    Status and next
+    <span>What is proven, what is live, what is missing and what comes next.</span>
+  </a>
+  <a class="chapter-card" href="glossary.html">
+    <b>Reference</b>
+    Glossary
+    <span>Every term, from “batch” to “TES”, in ordinary language.</span>
+  </a>
+  <a class="chapter-card" href="appendix.html">
+    <b>Reference</b>
+    Appendix
+    <span>File map, command cheat sheet, AWS resource inventory and further reading.</span>
+  </a>
+</div>
+
+<h2>How to read this book</h2>
+<div class="grid-2">
+  <div class="tile">
+    <h3>If you are not technical</h3>
+    <p>Read Parts 1, 2 and 7 in order. They explain the purpose, the shape and the current state without requiring you to run anything.</p>
+  </div>
+  <div class="tile">
+    <h3>If you want to rebuild it</h3>
+    <p>Read Parts 1 and 2 for context, then follow Parts 4 and 5 with a terminal open. Part 6 is the troubleshooting safety net.</p>
+  </div>
+</div>
+
+<h2>What this book is not</h2>
+<ul>
+  <li>It is not a production operations manual. The deployment is a sandbox proof.</li>
+  <li>It is not a claim that real factory devices are supported yet. The current source is synthetic.</li>
+  <li>It does not contain private keys, passwords or AWS secrets. Those stay on the machine, never in the repository.</li>
+</ul>
+
+<div class="callout">
+  <strong>The one-sentence version.</strong>
+  We built a small, careful data pipeline for factory readings, packaged it as a
+  Greengrass component, and proved that a reading can travel from the collector
+  through the local postmaster into AWS IoT Core.
+</div>
+
+<nav class="book-nav">
+  <a href="01-problem.html">Start with Part 1 →</a>
+  <a class="next" href="glossary.html">Jump to the glossary</a>
+</nav>
+
+</main>
+
+<footer class="footer">
+  Edge Platform Handbook · snapshot 17 October 2026 · <a href="../edge-platform-proposal.html">proposal</a> · <a href="../edge-platform-roadmap.html">roadmap</a> · <a href="../testing-validation.html">validation runbook</a>
+</footer>
+
+</body>
+</html>

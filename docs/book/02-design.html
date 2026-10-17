@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 2 — The design | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 2</p>
+  <h1>The design: one narrow waist, many protocols</h1>
+  <p class="lede">
+    The project is shaped like an hourglass. Many factory protocols enter the top,
+    everything narrows into one frozen data shape, and one northbound path carries
+    it to AWS.
+  </p>
+
+  <h2>The stack, from site to silicon</h2>
+  <div class="diagram">
+    <div class="box">Site configuration<br><span class="small">addresses, names, thresholds</span></div>
+    <div class="arrow">↓</div>
+    <div class="box">Adapter component<br><span class="small">OPC UA · Modbus · MQTT</span></div>
+    <div class="arrow">↓</div>
+    <div class="box">Frozen contract<br><span class="small">Sample / Batch + JSON Schema</span></div>
+    <div class="arrow">↓</div>
+    <div class="box">Base component set<br><span class="small">pipeline · spool · health · publisher</span></div>
+    <div class="arrow">↓</div>
+    <div class="box">Base image<br><span class="small">Ubuntu · Python · nucleus · hardening</span></div>
+    <span class="small-note">Only the bottom layer is an image. Everything above it is a component or configuration.</span>
+  </div>
+
+  <p>
+    The rule that follows from this picture is simple: if a change would make two
+    sites need different base images, it belongs above the image, not inside it.
+  </p>
+
+  <h2>Northbound and southbound</h2>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>Northbound</h3>
+      <p>Everything toward AWS: the wire format, batching, device identity, mutual TLS, store-and-forward, health, deployment mechanics and logging. It changes rarely and is owned by the base.</p>
+    </div>
+    <div class="tile">
+      <h3>Southbound</h3>
+      <p>Everything toward the factory: protocols, register maps, byte order, scaling, polling cadence, serial settings and vendor quirks. It changes per site and belongs to adapters and configuration.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The line in the sand.</strong>
+    The base owns everything from the data contract northward. The site owns
+    everything south of it. Crossing that line in the wrong direction is how
+    projects end up with one image per customer.
+  </div>
+
+  <h2>The frozen contract: Sample and Batch</h2>
+  <p>
+    A <strong>Sample</strong> is one measurement from one metric. A
+    <strong>Batch</strong> is an ordered group of samples from one device, sent as
+    one northbound message. The batch is per device because the device id is part
+    of the topic, and because a dashboard usually wants one device’s readings
+    together.
+  </p>
+
+  <h3>What a Sample carries</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Meaning</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>device_id</code></td><td>The logical asset the reading belongs to.</td><td><code>plc-line-1</code></td></tr>
+      <tr><td><code>metric</code></td><td>The name of the measurement.</td><td><code>temperature</code></td></tr>
+      <tr><td><code>value</code></td><td>A number, string or boolean.</td><td><code>23.5</code></td></tr>
+      <tr><td><code>ts</code></td><td>When the reading was observed; always UTC.</td><td><code>2026-10-17T12:57:51Z</code></td></tr>
+      <tr><td><code>source</code></td><td>Which protocol family produced it.</td><td><code>opcua</code>, <code>modbus</code>, <code>mqtt</code>, <code>sim</code></td></tr>
+      <tr><td><code>origin</code></td><td>Where inside that protocol it came from.</td><td>a node id, topic or register</td></tr>
+      <tr><td><code>unit</code></td><td>Optional engineering unit.</td><td><code>degC</code></td></tr>
+      <tr><td><code>quality</code></td><td>Whether the value should be trusted.</td><td><code>good</code>, <code>uncertain</code>, <code>bad</code>, <code>stale</code></td></tr>
+      <tr><td><code>tags</code></td><td>Small string labels for context.</td><td><code>{"line": "A"}</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Quality is deliberately OPC UA style. A value can exist but be bad. A pipeline
+    that throws away quality information cannot tell “zero” from “unknown”.
+  </p>
+
+  <h3>What a Batch carries</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>schema_version</code></td><td>Always <code>"1.0"</code> for this contract.</td></tr>
+      <tr><td><code>gateway_id</code></td><td>Gateway identity; also the AWS IoT thing name.</td></tr>
+      <tr><td><code>device_id</code></td><td>Device for this batch; every sample must match.</td></tr>
+      <tr><td><code>seq</code></td><td>Monotonic batch number for the process.</td></tr>
+      <tr><td><code>produced_at</code></td><td>When the batch was assembled, in UTC.</td></tr>
+      <tr><td><code>samples</code></td><td>At least one sample.</td></tr>
+    </tbody>
+  </table>
+
+  <p>A real payload from the AWS proof:</p>
+  <pre><code>{
+  "schema_version": "1.0",
+  "gateway_id": "edge-platform-sandbox-core",
+  "device_id": "plc-line-1",
+  "seq": 20,
+  "produced_at": "2026-10-17T12:57:52.925092+00:00",
+  "samples": [
+    {
+      "device_id": "plc-line-1",
+      "metric": "temperature",
+      "value": 23.5,
+      "ts": "2026-10-17T12:57:51.928279+00:00",
+      "source": "sim",
+      "origin": "synthetic:temperature",
+      "unit": "degC",
+      "quality": "good",
+      "tags": {}
+    }
+  ]
+}</code></pre>
+
+  <p>
+    The JSON is compact on the wire (no spaces) because AWS IoT Core has a 5 KB
+    tier that this project deliberately stays under.
+  </p>
+
+  <h2>Topics and identities</h2>
+  <p>There are only two topics in the frozen v1 namespace:</p>
+  <pre><code>edge/&lt;gateway_id&gt;/&lt;device_id&gt;/telemetry
+edge/&lt;gateway_id&gt;/status</code></pre>
+  <p>
+    The gateway id is also the AWS IoT thing name. It must be safe as a thing name.
+    The device id lives only in a topic level and may contain dots. Both are
+    immutable. Site, tenant and environment belong in the payload or a registry,
+    not in the topic, unless a real routing requirement is proven.
+  </p>
+
+  <table>
+    <thead><tr><th>Identifier</th><th>Allowed pattern</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Gateway</td><td><code>^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$</code></td><td><code>edge-platform-sandbox-core</code></td></tr>
+      <tr><td>Device</td><td><code>^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$</code></td><td><code>plc-line-1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>The pipeline: ingest, batch, deliver</h2>
+  <p>
+    The pipeline is deliberately small. Readings enter from a source, wait in a
+    bounded queue, are grouped by device, and are delivered to a sink. The
+    important decisions are in the edges, not in a large framework.
+  </p>
+
+  <h3>Two flush triggers, and no third</h3>
+  <ul>
+    <li>A batch is sent when it reaches <code>max_samples</code>.</li>
+    <li>Or when <code>flush_interval_s</code> has elapsed, whichever comes first.</li>
+    <li>Shutdown flushes the buffer once more, so a clean stop does not strand data.</li>
+  </ul>
+
+  <h3>A bounded queue</h3>
+  <p>
+    The queue has <code>queue_max</code> slots. If the sink is slower than the
+    source, the queue eventually fills. The configured policy is
+    <code>drop_oldest</code> or <code>drop_newest</code>; both are counted loudly.
+    There is deliberately no “block” policy, because a sensor callback must never
+    stall the whole gateway.
+  </p>
+
+  <h3>Ordering is the strongest guarantee</h3>
+  <p>
+    Once anything is in the spool, new batches are appended behind it. The replay
+    loop sends oldest first. Nothing overtakes the backlog. This matters more than
+    raw throughput: a dashboard can tolerate a delay, but it cannot easily repair
+    out-of-order history.
+  </p>
+
+  <h2>The spool: an outbox that survives a power cut</h2>
+  <p>
+    The spool is a SQLite database in WAL mode. It stores the exact JSON payload of
+    each batch, oldest first, and deletes rows after they are delivered.
+  </p>
+  <ul>
+    <li><strong>Budget on payload bytes, not file size.</strong> SQLite does not return freed pages promptly; a file-size budget would purge forever.</li>
+    <li><strong>Thread-safe.</strong> The connection is opened with <code>check_same_thread=False</code> and every operation is serialised behind a lock.</li>
+    <li><strong>Bounded.</strong> When the payload budget is exceeded, the oldest batches are dropped first, and the event is logged.</li>
+    <li><strong>Crash-safe.</strong> WAL and <code>synchronous=NORMAL</code> make it survive an ordinary power loss without a separate database service.</li>
+  </ul>
+
+  <h2>Sinks: one transport at a time</h2>
+  <p>
+    A sink owns exactly one way of sending a batch. The pipeline does not care which
+    one it is. A sink raises <code>SinkUnavailable</code> when the transport is down,
+    and the pipeline decides whether to spool or drop.
+  </p>
+  <table>
+    <thead><tr><th>Sink</th><th>Use</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>log</code></td><td>Local development and tests.</td><td>Writes one line per batch; no network.</td></tr>
+      <tr><td><code>mqtt</code></td><td>Local broker or direct IoT Core over mTLS.</td><td>Uses paho; certificates are configured explicitly.</td></tr>
+      <tr><td><code>greengrass</code></td><td>Production path through the Greengrass nucleus.</td><td>No AWS keys in the component; publishes over the local IPC socket.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    The Greengrass sink is not a network client. It talks to the nucleus over a Unix
+    socket. The nucleus owns the device certificate, the AWS IoT connection and its
+    offline queue. If the nucleus is down, the sink reports unavailable and the
+    collector spools.
+  </p>
+
+  <h2>Health: three tiny endpoints</h2>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>/healthz</code></td><td>“The process is alive.” Always 200 while the server runs.</td></tr>
+      <tr><td><code>/readyz</code></td><td>“Every enabled source is connected.” 200 when ready, 503 when not.</td></tr>
+      <tr><td><code>/stats</code></td><td>JSON counters: accepted, built, sent, spooled, replayed, dropped, sink health, source health.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    This is deliberately built on the Python standard library, not a web framework.
+    On a device that may not be touched for years, fewer dependencies means fewer
+    security patches and fewer surprises.
+  </p>
+
+  <h2>The image and the component</h2>
+  <p>
+    The <strong>image</strong> is the bottom layer: a pinned Ubuntu 24.04 userland,
+    Python 3.12 in a virtual environment, a non-root user, a health check and the
+    collector installed in that environment. It does not contain site-specific
+    point maps.
+  </p>
+  <p>
+    The <strong>component</strong> is above the image: a ZIP of the collector wheel
+    plus its dependencies, a recipe that tells Greengrass how to install and run
+    it, and an access-control policy. Site-specific settings are component
+    configuration, not a new image.
+  </p>
+
+  <div class="diagram">
+    <div class="box">Base image<br><span class="small">OS · Python · CA roots · non-root user</span></div>
+    <div class="arrow">+</div>
+    <div class="box">Collector component<br><span class="small">wheel · recipe · IPC access</span></div>
+    <div class="arrow">+</div>
+    <div class="box">Site config<br><span class="small">gateway id · device id · topic choices</span></div>
+    <span class="small-note">The image is reused. The component is versioned. The site config changes per deployment.</span>
+  </div>
+
+  <h3>Why NoContainer?</h3>
+  <p>
+    Greengrass components can run in Docker or as ordinary processes. This project
+    uses process mode (<code>NoContainer</code>) because the collector is a normal
+    Linux process and the gateway should not need a Docker daemon inside the
+    device. It keeps the image smaller and the failure modes simpler.
+  </p>
+
+  <h3>Why the component namespace matters</h3>
+  <p>
+    Components live under <code>io.github.doudouba0309.EdgePlatform</code>. Client
+    and site names belong in configuration, thing groups and deployment names, not
+    in component names. Otherwise every customer would need a different component
+    identity for the same code.
+  </p>
+
+  <h2>Security design, in one page</h2>
+  <ul>
+    <li><strong>No long-lived AWS keys in the component.</strong> The nucleus owns the device certificate and obtains temporary credentials through the token exchange service.</li>
+    <li><strong>One device identity.</strong> The certificate is attached to a thing; the IoT policy limits the exact client id and topics.</li>
+    <li><strong>Least privilege, with explicit exceptions.</strong> The core needs MQTT rights, Greengrass control-plane rights and permission to assume the TES role. The TES role needs S3 read and logging.</li>
+    <li><strong>No secrets in git.</strong> A secret guard checks tracked paths and contents; a pre-commit hook and a separate CI workflow enforce it.</li>
+    <li><strong>No root AWS user for daily work.</strong> The sandbox uses a named admin profile, MFA and a budget.</li>
+  </ul>
+
+  <h2>What is deliberately absent</h2>
+  <table>
+    <thead><tr><th>Not present</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>OPC UA and Modbus sources</td><td>The data contract and transport were proven first; protocol adapters are Phase 1.</td></tr>
+      <tr><td>A web UI</td><td>Not needed on a 1 GB device, and not part of the northbound contract.</td></tr>
+      <tr><td>A general workflow engine</td><td>The pipeline is intentionally small and testable.</td></tr>
+      <tr><td>Docker inside the component</td><td><code>NoContainer</code> is simpler and smaller.</td></tr>
+      <tr><td>Per-site images</td><td>The image is generic; sites supply configuration and adapters.</td></tr>
+      <tr><td>File sink</td><td>Log sink covers local development; durable local capture can be added if a real need appears.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout ok">
+    <strong>The design in one sentence.</strong>
+    Normalise everything into one batch, protect it with a bounded queue and a
+    disk spool, and hand it to a local postmaster that owns the cloud identity —
+    while keeping site-specific protocol work out of the image.
+  </div>
+
+  <nav class="book-nav">
+    <a href="01-problem.html">← Part 1</a>
+    <a class="next" href="03-built.html">Part 3 — What was built →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 2 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

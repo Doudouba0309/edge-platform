@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part 7 — Status and next | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Part 7</p>
+  <h1>Where we are, and what comes next</h1>
+  <p class="lede">
+    The northbound path is proven. The factory-floor path is still a promise. This
+    part separates the two clearly so nobody mistakes a successful AWS proof for a
+    finished product.
+  </p>
+
+  <h2>Status at a glance</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Data contract</td><td><span class="pill">Done</span></td><td>Frozen JSON Schema; 134 tests.</td></tr>
+      <tr><td>Collector runtime</td><td><span class="pill">Done</span></td><td>Batching, queue bounds, spool, health, graceful shutdown.</td></tr>
+      <tr><td>Local mTLS and outage replay</td><td><span class="pill">Done</span></td><td><code>make verify</code> passes.</td></tr>
+      <tr><td>Tier 1 images</td><td><span class="pill">Done</span></td><td>arm64 and x86_64 boot smoke passes.</td></tr>
+      <tr><td>Greengrass component</td><td><span class="pill">Done</span></td><td>Universal wheelhouse, recipe, policy, drift tests.</td></tr>
+      <tr><td>IPC publish</td><td><span class="pill">Done</span></td><td>Component 1.0.4 publishes through the nucleus.</td></tr>
+      <tr><td>AWS data path</td><td><span class="pill">Done</span></td><td>Real batch observed in IoT Core.</td></tr>
+      <tr><td>Real Modbus/OPC UA</td><td><span class="pill warn">Not started</span></td><td>The source is still synthetic.</td></tr>
+      <tr><td>Repeatable AWS scripts</td><td><span class="pill warn">Not done</span></td><td>The proof used documented manual CLI steps.</td></tr>
+      <tr><td>Teardown</td><td><span class="pill warn">Pending</span></td><td>Live sandbox left for inspection.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The validation result</h2>
+  <p>
+    The current validation run passed six of six checks:
+  </p>
+  <div class="grid-2">
+    <div class="tile"><h3>Image</h3><p>Both Tier 1 images booted, published, stayed under the memory ceiling and stopped cleanly.</p></div>
+    <div class="tile"><h3>Collector</h3><p>134 tests, health 200/ready 200, mTLS, one batch spooled offline and replayed.</p></div>
+    <div class="tile"><h3>AWS core</h3><p>Core <code>HEALTHY</code>, component 1.0.4 <code>RUNNING</code>.</p></div>
+    <div class="tile"><h3>AWS data</h3><p>A schema-1.0 batch observed on the expected telemetry topic with quality <code>good</code>.</p></div>
+  </div>
+
+  <p>
+    The detailed runbook is <a href="../testing-validation.html">testing-validation.html</a>.
+    It is written for exactly this kind of check and can be repeated at any time.
+  </p>
+
+  <h2>What is still live</h2>
+  <p>
+    The sandbox was intentionally left running after the proof so it could be
+    inspected:
+  </p>
+  <ul>
+    <li>the local <code>edge-platform-aws-core</code> container and its volume;</li>
+    <li>the thing <code>edge-platform-sandbox-core</code> and its thing group;</li>
+    <li>the core certificate and IoT policy;</li>
+    <li>the TES role and role alias;</li>
+    <li>the observer certificate and policy;</li>
+    <li>component versions and deployment history;</li>
+    <li>the component ZIP and other objects in the S3 bucket.</li>
+  </ul>
+
+  <div class="callout warn">
+    <strong>Teardown is a separate action.</strong>
+    It is destructive and has not been performed. Never delete a certificate still
+    attached to a live core without planning the order. The exact cleanup order is
+    in Part 5, step 13.
+  </div>
+
+  <h2>What is missing for a real site</h2>
+  <table>
+    <thead><tr><th>Missing</th><th>Why it matters</th><th>Where it belongs</th></tr></thead>
+    <tbody>
+      <tr><td>Point-map schema and engine</td><td>A controls engineer should map a device without writing Python.</td><td>Phase 1, base component set.</td></tr>
+      <tr><td>Modbus TCP source</td><td>The most common real-site protocol in the roadmap.</td><td>Phase 1 adapter.</td></tr>
+      <tr><td>OPC UA source</td><td>Many PLCs expose OPC UA; the current code only has the contract, not the source.</td><td>Phase 1 adapter.</td></tr>
+      <tr><td>Device surrogates and conformance suite</td><td>An adapter without a test against a simulated device is not trustworthy.</td><td>Phase 2.</td></tr>
+      <tr><td>Repeatable provisioning scripts</td><td>The AWS proof is manual and took several corrections.</td><td>Operations, before the next AWS test.</td></tr>
+      <tr><td>Production security review</td><td>Certificate rotation, least privilege and incident response are not exercised.</td><td>Before a real deployment.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The roadmap, in plain terms</h2>
+  <p>
+    The project’s own roadmap defines five phases. Only the first is substantially
+    complete; the next three are the product.
+  </p>
+  <table>
+    <thead><tr><th>Phase</th><th>What it delivers</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><strong>0 — Base and pipeline</strong></td><td>Frozen contract, image, two-architecture CI, spool, health, nucleus, component package.</td><td><span class="pill">Mostly done</span></td></tr>
+      <tr><td><strong>1 — Declarative engine</strong></td><td>Point-map schema, Modbus TCP, OPC UA, validation before deployment.</td><td><span class="pill warn">Next</span></td></tr>
+      <tr><td><strong>2 — Adapter kit and conformance</strong></td><td>Source contract, surrogates, fixtures and a machine-readable conformance report.</td><td><span class="pill warn">Not started</span></td></tr>
+      <tr><td><strong>3 — Agent factory</strong></td><td>Skills, context layers, subagent contracts, provenance.</td><td><span class="pill warn">Not started</span></td></tr>
+      <tr><td><strong>4 — Fleet operations</strong></td><td>Rollout, rollback, patch cadence, provenance ledger and field signals.</td><td><span class="pill warn">Not started</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Recommended next step</h2>
+  <div class="callout ok">
+    <strong>Finish the base, then make it useful on a factory floor.</strong>
+    The next build task should be the declarative point-map engine and the Modbus
+    TCP source, with a surrogate and fixtures. That is the shortest path from
+    “pretend sensor” to “a controls engineer can map a real PLC without writing
+    code”.
+  </div>
+
+  <h3>Before Phase 1</h3>
+  <ol>
+    <li>Decide whether to keep or tear down the live sandbox.</li>
+    <li>If it will be recreated, add the repeatable AWS provision/publish/deploy/teardown scripts and runbook.</li>
+    <li>Keep the validation runbook green as the code changes.</li>
+  </ol>
+
+  <h3>Then Phase 1</h3>
+  <ol>
+    <li>Define the versioned point-map schema.</li>
+    <li>Build the engine: point map in, protocol client driven, <code>Sample</code>s out.</li>
+    <li>Add Modbus TCP: registers, coils, data types, word/byte order, scaling.</li>
+    <li>Generalise OPC UA onto the same engine.</li>
+    <li>Add point-map validation before deployment.</li>
+    <li>Test from fixtures and a surrogate, never from a live PLC.</li>
+  </ol>
+
+  <h2>What success will look like next</h2>
+  <p>
+    Not “another AWS message”. The next real milestone is:
+  </p>
+  <blockquote>
+    A controls engineer writes one point-map file for a simulated Modbus or OPC UA
+    device, deploys the collector without changing the image or writing Python,
+    and a schema-valid batch appears in AWS.
+  </blockquote>
+  <p>
+    At that point the platform has crossed from “the pipe works” to “a site can
+    use it”.
+  </p>
+
+  <h2>Honest bottom line</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td>Can it send real telemetry to AWS?</td><td>Yes, proven with a synthetic source and a real Greengrass core.</td></tr>
+      <tr><td>Can it read a real PLC today?</td><td>No. The protocol adapters are the next phase.</td></tr>
+      <tr><td>Is it production-ready?</td><td>No. It is a sandbox proof with a solid northbound base.</td></tr>
+      <tr><td>Is the architecture sound?</td><td>The frozen contract, bounded queue, spool, image/component split and no-credentials-in-component rule are deliberate and tested.</td></tr>
+      <tr><td>What should happen next?</td><td>Decide teardown, then build Phase 1: point map + Modbus TCP + surrogate.</td></tr>
+    </tbody>
+  </table>
+
+  <nav class="book-nav">
+    <a href="06-lessons.html">← Part 6</a>
+    <a class="next" href="glossary.html">Glossary →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Part 7 · <a href="index.html">Contents</a></footer>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appendix — Reference | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Reference</p>
+  <h1>Appendix: the map, the commands, the evidence</h1>
+  <p class="lede">
+    The practical reference you keep open while rebuilding: what lives where,
+    which command does what, what the AWS pieces are called, and where the deeper
+    documents live.
+  </p>
+
+  <h2>Repository map</h2>
+  <table>
+    <thead><tr><th>Path</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>README.md</code></td><td>Project overview, local usage, gates and links.</td></tr>
+      <tr><td><code>AGENTS.md</code></td><td>The operating manual: layering, invariants, traps, never-run commands, definition of done.</td></tr>
+      <tr><td><code>src/edge_collector/</code></td><td>The collector package: models, config, pipeline, spool, sinks, sources, health, app.</td></tr>
+      <tr><td><code>schemas/telemetry-batch.schema.json</code></td><td>The committed frozen JSON Schema.</td></tr>
+      <tr><td><code>tests/</code></td><td>134 unit, contract and artifact tests.</td></tr>
+      <tr><td><code>config/</code></td><td>Local, smoke and container configurations.</td></tr>
+      <tr><td><code>Dockerfile</code></td><td>The Tier 1 collector image.</td></tr>
+      <tr><td><code>constraints.txt</code></td><td>Pinned runtime dependencies for the image.</td></tr>
+      <tr><td><code>nucleus/</code></td><td>Nucleus image and entrypoint: offline and AWS modes.</td></tr>
+      <tr><td><code>deploy/greengrass/recipe.yaml.tmpl</code></td><td>Component recipe: two architectures, lifecycle, IPC access control.</td></tr>
+      <tr><td><code>deploy/aws/iot-policy.json.tmpl</code></td><td>Core IoT policy template: MQTT, control plane, role assumption.</td></tr>
+      <tr><td><code>scripts/build-component.sh</code></td><td>Builds the universal wheelhouse, ZIP, recipe and rendered policy.</td></tr>
+      <tr><td><code>scripts/smoke-image.sh</code></td><td>Builds and boots the collector image on both Tier 1 architectures.</td></tr>
+      <tr><td><code>scripts/smoke-local.sh</code></td><td>Local mTLS, outage, replay and resource test.</td></tr>
+      <tr><td><code>scripts/smoke-nucleus.sh</code></td><td>Offline nucleus startup, IPC, restart and SIGTERM test.</td></tr>
+      <tr><td><code>scripts/gen-test-certs.sh</code></td><td>Generates the local test PKI.</td></tr>
+      <tr><td><code>scripts/sbom.sh</code></td><td>CycloneDX SBOM generation with Syft.</td></tr>
+      <tr><td><code>scripts/check-secrets.sh</code></td><td>Tracked-path and private-key content guard.</td></tr>
+      <tr><td><code>Makefile</code></td><td>The gates: install, check, verify, smoke, component, SBOM, nucleus smoke.</td></tr>
+      <tr><td><code>.github/workflows/ci.yml</code></td><td>Check, component, image and nucleus jobs; buildx cache; docs-only skip.</td></tr>
+      <tr><td><code>.github/workflows/security.yml</code></td><td>Secret guard on every push and pull request.</td></tr>
+      <tr><td><code>docs/</code></td><td>Proposal, roadmap, decisions, AWS setup, testing guide and this handbook.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Command cheat sheet</h2>
+  <table>
+    <thead><tr><th>Command</th><th>What it does</th><th>Needs</th></tr></thead>
+    <tbody>
+      <tr><td><code>make install</code></td><td>Creates the virtual environment and installs dependencies.</td><td>uv</td></tr>
+      <tr><td><code>make hooks</code></td><td>Installs the pre-commit secret hook.</td><td>pre-commit (installed by <code>make install</code>)</td></tr>
+      <tr><td><code>make check</code></td><td>Ruff, mypy, 134 tests and the secret guard.</td><td>Nothing else</td></tr>
+      <tr><td><code>make verify</code></td><td>Check plus local mTLS, outage, replay, RSS and SIGTERM.</td><td>Docker + Mosquitto clients</td></tr>
+      <tr><td><code>make smoke</code></td><td>Builds and boots both Tier 1 collector images.</td><td>Docker</td></tr>
+      <tr><td><code>PLATFORMS=linux/arm64 make smoke</code></td><td>Faster single-architecture image test.</td><td>Docker</td></tr>
+      <tr><td><code>make component</code></td><td>Builds the universal component ZIP, recipe and policy.</td><td>uv, Python with pip, network</td></tr>
+      <tr><td><code>make nucleus-smoke</code></td><td>Builds and verifies the offline nucleus on both architectures.</td><td>Docker</td></tr>
+      <tr><td><code>make sbom</code></td><td>CycloneDX SBOMs for collector images.</td><td>Docker + Syft</td></tr>
+      <tr><td><code>make sbom-nucleus</code></td><td>CycloneDX SBOMs for nucleus images.</td><td>Docker + Syft</td></tr>
+      <tr><td><code>make help</code></td><td>Lists every gate.</td><td>Nothing</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current AWS resource inventory</h2>
+  <p>
+    This is the live sandbox as of 17 October 2026. Names are safe to read; the
+    account id is intentionally omitted and can be retrieved with
+    <code>aws sts get-caller-identity</code>.
+  </p>
+  <table>
+    <thead><tr><th>Resource</th><th>Name / value</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Profile</td><td><code>edge-platform-admin</code></td><td>Named admin identity, not root.</td></tr>
+      <tr><td>Region</td><td><code>ap-southeast-1</code></td><td>All test resources.</td></tr>
+      <tr><td>Thing</td><td><code>edge-platform-sandbox-core</code></td><td>Cloud record of the gateway.</td></tr>
+      <tr><td>Thing group</td><td><code>edge-platform-sandbox</code></td><td>Deployment target.</td></tr>
+      <tr><td>Core IoT policy</td><td><code>edge-platform-sandbox-core-policy</code></td><td>MQTT, control plane, role assumption.</td></tr>
+      <tr><td>TES role</td><td><code>edge-platform-sandbox-TESRole</code></td><td>Temporary AWS credentials for the nucleus.</td></tr>
+      <tr><td>Role alias</td><td><code>edge-platform-sandbox-TESRoleAlias</code></td><td>Name the nucleus asks for credentials.</td></tr>
+      <tr><td>Observer</td><td><code>edge-platform-sandbox-observer</code></td><td>Read-only MQTT observer for validation.</td></tr>
+      <tr><td>Component</td><td><code>io.github.doudouba0309.EdgePlatform.Collector</code></td><td>Collector component.</td></tr>
+      <tr><td>Running version</td><td><code>1.0.4</code></td><td>Deployed and <code>RUNNING</code> at the time of writing.</td></tr>
+      <tr><td>Topic</td><td><code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code></td><td>Observed telemetry.</td></tr>
+      <tr><td>Bucket</td><td><code>edge-platform-sandbox-&lt;account-id&gt;-ap-southeast-1</code></td><td>Private component artifact storage.</td></tr>
+      <tr><td>Local core</td><td><code>edge-platform-aws-core</code></td><td>Docker container running the nucleus.</td></tr>
+      <tr><td>Core volume</td><td><code>edge-platform-aws-core-root</code></td><td>Persistent <code>/greengrass/v2</code> state.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Permissions, grouped by purpose</h2>
+  <table>
+    <thead><tr><th>Gate</th><th>What it allows</th><th>Where it lives</th></tr></thead>
+    <tbody>
+      <tr><td>MQTT connect</td><td>Connect as <code>client/edge-platform-sandbox-core</code>.</td><td>Core IoT policy.</td></tr>
+      <tr><td>MQTT publish/receive</td><td><code>edge/*</code> and <code>$aws/things/&lt;thing&gt;/*</code>.</td><td>Core IoT policy.</td></tr>
+      <tr><td>MQTT subscribe</td><td><code>edge/*</code> and <code>$aws/things/&lt;thing&gt;/*</code>.</td><td>Core IoT policy.</td></tr>
+      <tr><td>Greengrass control plane</td><td>Resolve components, read deployment configuration, inspect thing groups, fetch artifact metadata.</td><td>Core IoT policy.</td></tr>
+      <tr><td>Assume role</td><td><code>iot:AssumeRoleWithCertificate</code> on the role alias.</td><td>Core IoT policy.</td></tr>
+      <tr><td>TES role trust</td><td><code>credentials.iot.amazonaws.com</code> may assume the role.</td><td>IAM trust policy.</td></tr>
+      <tr><td>TES permissions</td><td>IoT publish/subscribe/connect/shadow, logs, S3 object read and bucket location.</td><td>IAM inline policy.</td></tr>
+      <tr><td>IPC telemetry</td><td><code>aws.greengrass#PublishToIoTCore</code> on <code>edge/+/+/telemetry</code>.</td><td>Component recipe access control.</td></tr>
+      <tr><td>Observer</td><td>Connect as observer, subscribe <code>edge/#</code>, receive <code>edge/*</code>.</td><td>Observer IoT policy.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Configuration fields that matter</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>gateway_id</code></td><td>Gateway identity; must match the thing name.</td></tr>
+      <tr><td><code>sink.kind</code></td><td><code>log</code>, <code>mqtt</code> or <code>greengrass</code>.</td></tr>
+      <tr><td><code>batching.max_samples</code></td><td>Flush when this many samples are buffered.</td></tr>
+      <tr><td><code>batching.flush_interval_s</code></td><td>Flush when this much time has passed, even below <code>max_samples</code>.</td></tr>
+      <tr><td><code>batching.queue_max</code></td><td>Maximum samples waiting in memory.</td></tr>
+      <tr><td><code>batching.overflow_policy</code></td><td><code>drop_oldest</code> or <code>drop_newest</code>.</td></tr>
+      <tr><td><code>spool.enabled</code></td><td>Turns the disk outbox on or off.</td></tr>
+      <tr><td><code>spool.max_bytes</code></td><td>Payload-byte budget, not file size.</td></tr>
+      <tr><td><code>sources.synthetic.enabled</code></td><td>Uses the pretend sensor until real adapters arrive.</td></tr>
+      <tr><td><code>health.port</code></td><td>Where <code>/healthz</code>, <code>/readyz</code> and <code>/stats</code> listen.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Further reading</h2>
+  <table>
+    <thead><tr><th>Document</th><th>Why read it</th></tr></thead>
+    <tbody>
+      <tr><td><a href="../edge-platform-proposal.html">Proposal — One Base, Many Protocols</a></td><td>The original architectural argument and non-goals.</td></tr>
+      <tr><td><a href="../edge-platform-roadmap.html">Implementation Roadmap</a></td><td>The five phases and their exit tests.</td></tr>
+      <tr><td><a href="../open-questions.md">Open Questions</a></td><td>The decisions that were still open when the design was written.</td></tr>
+      <tr><td><a href="../decisions/0001-component-namespace.md">Decision 0001</a></td><td>Component namespace, NoContainer, nucleus version and SBOM policy.</td></tr>
+      <tr><td><a href="../decisions/0002-runtime-baseline.md">Decision 0002</a></td><td>Ubuntu 24.04 and Python 3.12 baseline.</td></tr>
+      <tr><td><a href="../aws-sandbox-setup.html">AWS Sandbox Setup</a></td><td>Account creation through bucket and budget.</td></tr>
+      <tr><td><a href="../component-packaging.md">Component Packaging</a></td><td>Artifact layout, build inputs and drift tests.</td></tr>
+      <tr><td><a href="../testing-validation.html">Testing and Validation</a></td><td>The short, copy-and-paste validation runbook.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Snapshot and provenance</h2>
+  <p>
+    This handbook describes the repository as of <strong>17 October 2026</strong>,
+    after the AWS sandbox proof. The code history at that point contained 21
+    commits; the latest code commit before this book was
+    <code>5c24f98</code> (testing and validation runbook). The book itself is a
+    documentation change.
+  </p>
+  <p>
+    The AWS proof used component version <code>1.0.4</code>, region
+    <code>ap-southeast-1</code>, core architecture <code>aarch64</code> and the
+    synthetic source. The x86_64 image was exercised locally, not deployed to AWS.
+  </p>
+
+  <div class="callout">
+    <strong>If the sandbox is torn down later,</strong>
+    this appendix remains a historical record. The rebuild chapter is the
+    repeatable path; the resource inventory describes what the proof created.
+  </div>
+
+  <nav class="book-nav">
+    <a href="glossary.html">← Glossary</a>
+    <a class="next" href="index.html">Back to contents</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Appendix · <a href="index.html">Contents</a></footer>
+</body>
+</html>

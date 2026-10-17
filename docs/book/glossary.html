@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Reference</p>
+  <h1>Glossary</h1>
+  <p class="lede">
+    Every term that matters, in ordinary language. Use this page as a bookmark while
+    reading the rest of the handbook.
+  </p>
+
+  <h2>A–C</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Adapter</strong></td><td>Software that speaks one factory protocol and turns its readings into the common <code>Sample</code> shape.</td></tr>
+      <tr><td><strong>Agent</strong></td><td>An AI worker that can perform a scoped task in the repository, with rules and verification gates.</td></tr>
+      <tr><td><strong>ARM64 / aarch64</strong></td><td>The processor family used by many small gateways, including Apple Silicon and Raspberry Pi. Greengrass reports it as <code>aarch64</code>.</td></tr>
+      <tr><td><strong>AWS</strong></td><td>Amazon Web Services, the cloud provider that hosts IoT Core, S3, IAM and Greengrass management.</td></tr>
+      <tr><td><strong>Batch</strong></td><td>A group of samples from one device, sent as one message. Batching reduces cloud message cost.</td></tr>
+      <tr><td><strong>Base component set</strong></td><td>The shared northbound pieces: pipeline, spool, health, config loader and publisher.</td></tr>
+      <tr><td><strong>Base image</strong></td><td>The prebuilt operating system and runtime that runs on the gateway. Only the bottom layer is an image.</td></tr>
+      <tr><td><strong>Bounded queue</strong></td><td>A queue with a fixed maximum size. When full, the collector drops by policy rather than growing until the device runs out of memory.</td></tr>
+      <tr><td><strong>CA</strong></td><td>Certificate Authority. The Amazon root CA is the trusted starting point for the TLS certificate chain.</td></tr>
+      <tr><td><strong>Certificate</strong></td><td>A digital identity document. The gateway uses its certificate to prove who it is to AWS.</td></tr>
+      <tr><td><strong>CI</strong></td><td>Continuous Integration — automatic checks that run when code is pushed.</td></tr>
+      <tr><td><strong>Collector</strong></td><td>The program that reads sources, batches samples and hands them to a sink. The main application in this repository.</td></tr>
+      <tr><td><strong>Component</strong></td><td>An installable Greengrass package: code, a recipe, a version and permissions. The collector is one component.</td></tr>
+      <tr><td><strong>Contract</strong></td><td>The agreed data shape and rules. Here: <code>Sample</code>, <code>Batch</code>, the JSON Schema, topics and identifiers.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>D–I</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Device id</strong></td><td>The logical asset a reading belongs to, for example <code>plc-line-1</code>. It is a topic level, not a physical serial number.</td></tr>
+      <tr><td><strong>Direct IoT Core</strong></td><td>A deployment where the collector itself connects to IoT Core with a client certificate, instead of going through the Greengrass nucleus. The MQTT sink can do this; it is not the preferred path.</td></tr>
+      <tr><td><strong>Drop policy</strong></td><td>What to do when the memory queue is full: discard the oldest reading or the newest one. Counted, not silent.</td></tr>
+      <tr><td><strong>Edge</strong></td><td>The place near the factory equipment, where the gateway lives. “Edge computing” means processing data there rather than only in the cloud.</td></tr>
+      <tr><td><strong>Frozen</strong></td><td>Deliberately hard to change. A frozen contract can still be versioned, but not casually edited.</td></tr>
+      <tr><td><strong>Gateway</strong></td><td>The computer at the edge. It runs the collector and the Greengrass nucleus.</td></tr>
+      <tr><td><strong>Greengrass</strong></td><td>AWS IoT Greengrass V2: the software that manages components, identity, secure connection and offline behaviour on the gateway.</td></tr>
+      <tr><td><strong>Greengrass IPC</strong></td><td>Inter-process communication over a local Unix socket. The collector uses it to ask the nucleus to publish to IoT Core.</td></tr>
+      <tr><td><strong>Health endpoint</strong></td><td>A tiny HTTP service: <code>/healthz</code> for liveness, <code>/readyz</code> for readiness, <code>/stats</code> for counters.</td></tr>
+      <tr><td><strong>IAM</strong></td><td>AWS Identity and Access Management: users, roles and permissions.</td></tr>
+      <tr><td><strong>Image</strong></td><td>A prebuilt filesystem and runtime that can be booted as a container. The collector image is the base for the gateway.</td></tr>
+      <tr><td><strong>IoT Core</strong></td><td>The AWS MQTT message broker and device registry. It receives the telemetry.</td></tr>
+      <tr><td><strong>IoT policy</strong></td><td>A policy attached to a device certificate. It limits which client id may connect and which topics may be published or subscribed.</td></tr>
+      <tr><td><strong>IPC access control</strong></td><td>The component configuration that says which local IPC operations and topics a component may use.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>L–R</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>mTLS</strong></td><td>Mutual TLS: both sides present certificates. The gateway proves itself to AWS, and AWS proves itself to the gateway.</td></tr>
+      <tr><td><strong>Modbus</strong></td><td>A common industrial protocol based on registers and coils. It is a Phase 1 source, not yet implemented.</td></tr>
+      <tr><td><strong>Nucleus</strong></td><td>The core Greengrass process on the gateway. It starts components, owns the device certificate and talks to AWS.</td></tr>
+      <tr><td><strong>NoContainer</strong></td><td>A Greengrass execution mode where the component runs as a normal process, not inside a nested Docker container.</td></tr>
+      <tr><td><strong>OPC UA</strong></td><td>An industrial protocol with a structured address space, quality codes and security. It is a Phase 1 source, not yet implemented.</td></tr>
+      <tr><td><strong>Outbox / spool</strong></td><td>A disk buffer that holds completed batches while the uplink is down. SQLite is used here.</td></tr>
+      <tr><td><strong>Pipeline</strong></td><td>The component that accepts samples, groups them, builds batches and delivers them in order.</td></tr>
+      <tr><td><strong>PLC</strong></td><td>Programmable Logic Controller: the industrial computer that controls a machine or line.</td></tr>
+      <tr><td><strong>Point map</strong></td><td>A configuration document that maps device addresses and registers to metric names, units, scaling and deadbands. The central Phase 1 deliverable.</td></tr>
+      <tr><td><strong>Quality</strong></td><td>Whether a sample is <code>good</code>, <code>uncertain</code>, <code>bad</code> or <code>stale</code>. Carried on the wire, never inferred.</td></tr>
+      <tr><td><strong>Recipe</strong></td><td>The Greengrass component instruction card: name, version, platform manifests, artifacts, lifecycle commands and configuration.</td></tr>
+      <tr><td><strong>Role alias</strong></td><td>An AWS IoT alias that points to the TES role. The nucleus asks for credentials through it.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>S–Z</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>S3</strong></td><td>Amazon Simple Storage Service. Stores the component ZIP and other objects.</td></tr>
+      <tr><td><strong>SBOM</strong></td><td>Software Bill of Materials: a machine-readable inventory of the packages inside an image.</td></tr>
+      <tr><td><strong>Schema version</strong></td><td>The version of the wire contract. Currently <code>1.0</code>.</td></tr>
+      <tr><td><strong>Sequence number</strong></td><td>A monotonic batch counter. It helps ordering and debugging; it is not a database key.</td></tr>
+      <tr><td><strong>Sink</strong></td><td>The transport that sends a batch: log, MQTT or Greengrass IPC.</td></tr>
+      <tr><td><strong>Source</strong></td><td>The thing that produces samples: synthetic today; Modbus, OPC UA and MQTT in future.</td></tr>
+      <tr><td><strong>Spool</strong></td><td>See outbox. A durable FIFO queue for batches.</td></tr>
+      <tr><td><strong>Surrogate</strong></td><td>A simulated device used to test an adapter without real hardware.</td></tr>
+      <tr><td><strong>TES</strong></td><td>Token Exchange Service. The nucleus uses the device certificate and role alias to get temporary AWS credentials.</td></tr>
+      <tr><td><strong>Thing</strong></td><td>The AWS IoT registry entry for a device. The gateway id is also the thing name.</td></tr>
+      <tr><td><strong>Tier 1</strong></td><td>The two supported architectures: arm64 (aarch64) and x86_64 (amd64).</td></tr>
+      <tr><td><strong>Topic</strong></td><td>The MQTT address a message is published to, for example <code>edge/gw/device/telemetry</code>.</td></tr>
+      <tr><td><strong>UTC</strong></td><td>Coordinated Universal Time. All timestamps on the wire are timezone-aware UTC.</td></tr>
+      <tr><td><strong>WAL</strong></td><td>SQLite’s Write-Ahead Log mode, used for crash-safe spooling.</td></tr>
+      <tr><td><strong>Wheelhouse</strong></td><td>A folder of pre-downloaded Python packages so the component can install offline.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Still uncertain about a term?</strong>
+    Search the handbook for it, or read the “Design” part where the term first
+    appears. The glossary is deliberately short; the chapters carry the nuance.
+  </div>
+
+  <nav class="book-nav">
+    <a href="07-status.html">← Part 7</a>
+    <a class="next" href="appendix.html">Appendix →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Glossary · <a href="index.html">Contents</a></footer>
+</body>
+</html>
