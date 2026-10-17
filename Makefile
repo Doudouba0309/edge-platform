@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: help install format lint test check verify smoke sbom
+.PHONY: help install format lint test check verify smoke sbom sbom-nucleus nucleus-smoke
 
 help:
 	@printf '%s\n' \
@@ -16,8 +16,10 @@ help:
 		'test     unit tests' \
 		'check    lint + test (no Docker required)' \
 		'verify   check + local mTLS/spool smoke (Docker required)' \
-		'smoke    build both Tier 1 images and boot-smoke each (Docker required)' \
-		'sbom     generate CycloneDX SBOMs for both images (after make smoke)'
+		'smoke    build the Tier 1 collector images and boot-smoke each (Docker required)' \
+		'sbom     generate CycloneDX SBOMs for the collector images (after make smoke)' \
+		'sbom-nucleus   generate CycloneDX SBOMs for the nucleus images' \
+		'nucleus-smoke  build and verify the offline nucleus on both architectures'
 
 install:
 	@if [ ! -x "$(PYTHON)" ]; then uv venv --python 3.12 $(VENV); fi
@@ -45,3 +47,9 @@ smoke:
 
 sbom:
 	./scripts/sbom.sh
+
+sbom-nucleus:
+	./scripts/sbom.sh edge-platform-nucleus:arm64 edge-platform-nucleus:amd64
+
+nucleus-smoke:
+	./scripts/smoke-nucleus.sh

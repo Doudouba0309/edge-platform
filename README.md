@@ -28,13 +28,15 @@ and `/stats`.
 ```bash
 make check    # ruff format/check + mypy --strict + unit tests
 make verify   # check + local mTLS/spool smoke (Docker, mosquitto_pub)
-make smoke    # build both Tier 1 images and boot-smoke each
-make sbom     # generate CycloneDX SBOMs for both images (after make smoke)
+make smoke    # build the Tier 1 collector images and boot-smoke each
+make sbom     # CycloneDX SBOMs for the collector images (after make smoke)
+make nucleus-smoke  # build and verify the offline Greengrass nucleus
+make sbom-nucleus   # CycloneDX SBOMs for the nucleus images
 ```
 
-`make check` needs no Docker. `make verify` and `make smoke` expect Docker and
-the host Mosquitto clients. CI runs all three gates on every push to `main` and
-on pull requests.
+`make check` needs no Docker. The smoke targets expect Docker; `make verify`
+also needs the host Mosquitto clients. CI runs the gates on every push to `main`
+and on pull requests.
 
 ## End-to-end smoke
 
@@ -62,5 +64,21 @@ SIGTERM. It requires Docker/buildx and `mosquitto_pub`. The container config is
 [`config/collector-container.yaml`](config/collector-container.yaml); images are
 local artifacts and are not published by this script.
 
-`make sbom` scans both images with Syft and writes CycloneDX JSON to
-`var/sbom/`; CI uploads those files as artifacts.
+`make sbom` scans the collector images with Syft and writes CycloneDX JSON to
+`var/sbom/`; CI uploads those files as artifacts. `make sbom-nucleus` does the
+same for the nucleus images.
+
+## Greengrass nucleus (offline)
+
+`make nucleus-smoke` builds `edge-platform-nucleus:arm64` and
+`edge-platform-nucleus:amd64` from the pinned Greengrass nucleus `2.18.4`
+artifact and verifies, without AWS:
+
+- the nucleus launches and writes `Launched Nucleus successfully`;
+- the IPC socket exists at `/greengrass/v2/ipc.socket`;
+- a restart reuses the same self-signed identity;
+- SIGTERM stops it cleanly in under 25 seconds with `--init`.
+
+This is a separate image from the collector image because the nucleus needs a
+JRE and runs as root. Composing both into the production base image is the next
+packaging step.

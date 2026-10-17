@@ -8,15 +8,21 @@ cd "$ROOT"
 
 OUT_DIR="${OUT_DIR:-$ROOT/var/sbom}"
 SYFT_IMAGE="${SYFT_IMAGE:-anchore/syft:v1.54.1@sha256:3eb5379ba7b409c3f4069b686110527af0c47df993fa5c10d13e7cf34f49b1aa}"
-IMAGES=("edge-platform-base:arm64" "edge-platform-base:amd64")
+if [ "$#" -gt 0 ]; then
+  IMAGES=("$@")
+else
+  IMAGES=("edge-platform-base:arm64" "edge-platform-base:amd64")
+fi
+PYTHON_BIN=".venv/bin/python"
+[ -x "$PYTHON_BIN" ] || PYTHON_BIN="python3"
 
 fail() {
   echo "FAIL: $*" >&2
   exit 1
 }
 
-[ -x .venv/bin/python ] || fail "create .venv with 'uv pip install -e .[dev]' first"
 command -v docker >/dev/null || fail "docker is required"
+command -v "$PYTHON_BIN" >/dev/null || fail "python3 is required"
 
 mkdir -p "$OUT_DIR"
 TMP="$ROOT/var/sbom-work"
@@ -26,12 +32,14 @@ trap 'rm -rf "$TMP"' EXIT
 
 for image in "${IMAGES[@]}"; do
   arch="${image##*:}"
+  label="${image%%:*}"
+  label="${label##*/}"
   docker image inspect "$image" >/dev/null 2>&1 \
-    || fail "missing ${image}; run 'make smoke' first"
+    || fail "missing ${image}; run the image build first"
 
   echo "generating CycloneDX SBOM for ${image}"
   docker save "$image" -o "$TMP/${arch}.tar"
-  output="$OUT_DIR/sbom-${arch}.cdx.json"
+  output="$OUT_DIR/sbom-${label}-${arch}.cdx.json"
   docker run --rm \
     -v "$TMP:/work:ro" \
     "$SYFT_IMAGE" \
@@ -39,7 +47,7 @@ for image in "${IMAGES[@]}"; do
     > "$output.tmp"
   mv "$output.tmp" "$output"
 
-  .venv/bin/python - "$output" <<'PY'
+  "$PYTHON_BIN" - "$output" <<'PY'
 import json
 import sys
 

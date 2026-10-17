@@ -188,12 +188,16 @@ The gates, all runnable:
   store-and-forward outage/replay check.
 - `make smoke` — `scripts/smoke-image.sh`, which builds and boots both Tier 1
   images.
-- `make sbom` — `scripts/sbom.sh`, which generates CycloneDX JSON for both
-  images. It is an artifact, not a vulnerability gate.
+- `make sbom` — `scripts/sbom.sh`, which generates CycloneDX JSON for the
+  collector images.
+- `make sbom-nucleus` — the same scan for the nucleus images.
+- `make nucleus-smoke` — builds and verifies the offline Greengrass nucleus on
+  both architectures.
 
-`make check` needs no Docker. `make verify` and `make smoke` need Docker and the
-host Mosquitto clients. Do not invent commands that do not run, and do not
-claim a change is verified by a command that has not been defined.
+`make check` needs no Docker. The smoke targets and both SBOM targets need
+Docker; `make verify` also needs the host Mosquitto clients. Do not invent
+commands that do not run, and do not claim a change is verified by a command
+that has not been defined.
 
 ## Definition of done
 
@@ -202,7 +206,9 @@ A change is complete when all of these hold:
 - [ ] `make check` passes
 - [ ] `make verify` passes for transport or spool changes
 - [ ] `make smoke` passes for image changes
-- [ ] `make sbom` succeeds for image changes
+- [ ] `make sbom` succeeds for collector image changes
+- [ ] `make sbom-nucleus` succeeds for nucleus changes
+- [ ] `make nucleus-smoke` passes for nucleus changes
 - [ ] new behaviour has a test that fails without the change
 - [ ] `docs/` updated if behaviour, config or operations changed
 - [ ] the committed JSON Schema regenerated if the wire format moved
@@ -219,10 +225,10 @@ Two parts are verifiable offline:
   broker that requires a client certificate, proving certificate resolution,
   hostname verification, client-cert authentication and the publish topic. The
   AWS IoT Core endpoint, policy and authorisation remain unexercised.
-- **Containerised nucleus.** When it lands, the nucleus can be built and checked
-  offline: it reaches "Launched Nucleus successfully", serves its IPC socket,
-  survives a restart on the same identity, and shuts down cleanly on SIGTERM.
-  The boundary it proves: the nucleus only authenticates IPC clients it launched
+- **Containerised nucleus.** `scripts/smoke-nucleus.sh` builds the pinned
+  nucleus `2.18.4` image and verifies "Launched Nucleus successfully", the IPC
+  socket, identity reuse across a restart, and clean SIGTERM, all offline. The
+  boundary it proves: the nucleus only authenticates IPC clients it launched
   itself, so an outside client is refused with `KeyError: 'SVCUID'` and must
   degrade to spooling rather than crashing. Re-run this after touching the
   Greengrass sink.
