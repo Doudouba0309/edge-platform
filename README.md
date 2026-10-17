@@ -10,6 +10,10 @@ Design documents live under `docs/`:
 
 Implementation decisions are recorded under [`docs/decisions/`](docs/decisions/).
 
+Operational guides:
+
+- [AWS Sandbox Setup](docs/aws-sandbox-setup.html)
+
 ## Local runtime
 
 The Phase 0 runtime skeleton runs from a YAML config with a deterministic

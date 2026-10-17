@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS Sandbox Setup — Edge Platform</title>
+<style>
+  :root {
+    --ink: #17212b;
+    --muted: #5b6b7c;
+    --bg: #f4f7fa;
+    --card: #ffffff;
+    --line: #d8e0e8;
+    --accent: #0b6b7d;
+    --accent-soft: #e6f4f6;
+    --ok: #1f6b45;
+    --ok-soft: #eaf6f0;
+    --warn: #8a4b00;
+    --warn-soft: #fff7e6;
+    --danger: #9b2c2c;
+    --danger-soft: #fdecec;
+    --code: #0f1720;
+    --code-ink: #e8eef5;
+    --shadow: 0 12px 30px rgba(23, 33, 43, .07);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 100% 0%, #dff0f4 0, transparent 38rem),
+      var(--bg);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+  header.hero { padding: 54px 0 24px; }
+  .eyebrow {
+    margin: 0 0 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  h1 { margin: 0 0 12px; font-size: clamp(32px, 5vw, 48px); line-height: 1.1; letter-spacing: -.02em; }
+  .lede { max-width: 720px; margin: 0; font-size: 19px; color: #334556; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .meta span {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  nav.toc {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    margin: 8px 0 30px;
+  }
+  nav.toc h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  nav.toc ul { margin: 0; padding-left: 0; list-style: none; columns: 2; column-gap: 40px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+  main { padding-bottom: 70px; }
+  section { margin: 0 0 30px; }
+  h2 { font-size: 26px; line-height: 1.25; letter-spacing: -.01em; }
+  h3 { font-size: 18px; margin: 26px 0 8px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  .step {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 26px 28px;
+    margin: 0 0 24px;
+  }
+  .step-head { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 8px; }
+  .step-head .num {
+    flex: 0 0 42px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 18px;
+    border: 1px solid #bfe0e6;
+  }
+  .step-head h2 { margin: 3px 0 0; }
+  .step-head .kicker { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 2px; }
+  .time { font-size: 13px; color: var(--muted); margin: 2px 0 14px 57px; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 6px 0; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { position: relative; padding-left: 30px; margin: 9px 0; }
+  .checklist li::before {
+    content: "";
+    position: absolute; left: 0; top: 4px;
+    width: 17px; height: 17px;
+    border: 1.5px solid #9fb1c2;
+    border-radius: 4px;
+    background: #fff;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .92em;
+    background: #eef3f7;
+    border: 1px solid #dbe5ed;
+    border-radius: 5px;
+    padding: 1px 5px;
+  }
+  pre {
+    background: var(--code);
+    color: var(--code-ink);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    line-height: 1.55;
+    font-size: 13.5px;
+    margin: 14px 0;
+  }
+  pre code { background: transparent; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 12px 16px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+  }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-soft); }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+  .callout strong { display: block; margin-bottom: 3px; }
+  .done {
+    border: 1px solid #bfe0d0;
+    background: var(--ok-soft);
+    color: #174b33;
+    padding: 11px 15px;
+    border-radius: 10px;
+    margin: 18px 0 0;
+    font-size: 14.5px;
+  }
+  .done::before { content: "Done when · "; font-weight: 800; letter-spacing: .02em; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+  .card {
+    background: #fbfdff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .card strong { display: block; margin-bottom: 3px; }
+  .card span { color: var(--muted); font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f1f6f9; font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  details {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: #fbfdff;
+  }
+  summary { cursor: pointer; font-weight: 700; }
+  .appendix {
+    background: #fbfdff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin: 0 0 24px;
+  }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13.5px; }
+  .footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13.5px; }
+  .footer a { color: var(--muted); }
+  @media (max-width: 720px) {
+    nav.toc ul { columns: 1; }
+    .grid { grid-template-columns: 1fr; }
+    .step { padding: 20px 18px; }
+    .step-head .num { flex-basis: 36px; width: 36px; height: 36px; font-size: 16px; }
+    .time { margin-left: 51px; }
+  }
+  @media print {
+    body { background: #fff; }
+    nav.toc, .step, .appendix { box-shadow: none; }
+    a { color: inherit; text-decoration: underline; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Edge Platform · Operations guide</p>
+  <h1>Set up an AWS sandbox</h1>
+  <p class="lede">
+    A calm, step-by-step path from a brand-new AWS account to a disposable
+    Greengrass test environment. No production account, no root access keys, no
+    guesswork.
+  </p>
+  <div class="meta">
+    <span>About 25–40 minutes</span>
+    <span>Suggested budget: $10</span>
+    <span>Region: ap-southeast-1</span>
+    <span>Sandbox only</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ul>
+    <li><a href="#overview">What you are building</a></li>
+    <li><a href="#step1">Create the AWS account</a></li>
+    <li><a href="#step2">Secure the root user</a></li>
+    <li><a href="#step3">Set a budget</a></li>
+    <li><a href="#step4">Create your daily admin access</a></li>
+    <li><a href="#step5">Install the AWS CLI</a></li>
+    <li><a href="#step6">Configure the sandbox profile</a></li>
+    <li><a href="#step7">Verify the required services</a></li>
+    <li><a href="#step8">Create the sandbox bucket</a></li>
+    <li><a href="#step9">Hand it to the agent</a></li>
+    <li><a href="#step10">Teardown</a></li>
+    <li><a href="#appendix-a">Appendix A — scoped policy</a></li>
+    <li><a href="#appendix-b">Appendix B — command cheat sheet</a></li>
+    <li><a href="#appendix-c">Appendix C — troubleshooting</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<section id="overview">
+  <h2>What you are building</h2>
+  <p>
+    You are creating a small, isolated AWS account that the project can use to
+    provision a test Greengrass core, publish a component, deploy it, and verify
+    telemetry. The account is disposable. Nothing here should contain production
+    devices, customer data or shared company resources.
+  </p>
+
+  <div class="grid">
+    <div class="card"><strong>Account</strong><span>A dedicated, non-production AWS account.</span></div>
+    <div class="card"><strong>Guardrails</strong><span>MFA on root and admin, plus a small budget alarm.</span></div>
+    <div class="card"><strong>Access</strong><span>One CLI profile the agent can use; no secrets in chat.</span></div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Use the right account.</strong>
+    Do not follow this guide in a production account. If your organisation
+    provides a sandbox account, use that and skip step 1.
+  </div>
+
+  <h3>What you need</h3>
+  <ul>
+    <li>An email address you can access (ideally dedicated to this sandbox).</li>
+    <li>A password manager, a phone for verification, and a payment card for AWS.</li>
+    <li>An authenticator app for MFA.</li>
+    <li>A terminal on this Mac.</li>
+  </ul>
+
+  <h3>At a glance</h3>
+  <ul class="checklist">
+    <li>Create the account and choose the <strong>Basic</strong> support plan.</li>
+    <li>Turn on root MFA. Do not create root access keys.</li>
+    <li>Create a $10 monthly budget alert.</li>
+    <li>Create a dedicated admin identity with MFA.</li>
+    <li>Install the AWS CLI and configure the <code>edge-sandbox</code> profile.</li>
+    <li>Verify IoT, Greengrass and S3 access.</li>
+    <li>Create one private S3 bucket.</li>
+    <li>Send the agent the account ID, region, profile name and bucket name.</li>
+  </ul>
+</section>
+
+<section id="step1" class="step">
+  <div class="step-head">
+    <span class="num">1</span>
+    <div>
+      <span class="kicker">Account</span>
+      <h2>Create the AWS account</h2>
+    </div>
+  </div>
+  <p class="time">10–20 minutes, including email and identity verification.</p>
+
+  <ol>
+    <li>Open <a href="https://portal.aws.amazon.com/billing/signup" target="_blank" rel="noreferrer">portal.aws.amazon.com/billing/signup</a>.</li>
+    <li>Enter the sandbox email address and a strong password. Use a password manager.</li>
+    <li>Choose an account name such as <code>edge-platform-sandbox</code>.</li>
+    <li>Complete contact information, payment method and identity verification. AWS may place a small temporary charge to verify the card.</li>
+    <li>Choose the <strong>Basic support plan</strong>; it is free and sufficient for a sandbox.</li>
+    <li>Wait for the account activation email, then sign in at <a href="https://console.aws.amazon.com/" target="_blank" rel="noreferrer">console.aws.amazon.com</a>.</li>
+  </ol>
+
+  <div class="callout">
+    <strong>Region.</strong>
+    Use <code>ap-southeast-1</code> (Singapore) for this project unless you have a
+    reason to use another region. Keep every resource in that region.
+  </div>
+
+  <div class="done">You can sign in to the AWS Management Console as the root user.</div>
+</section>
+
+<section id="step2" class="step">
+  <div class="step-head">
+    <span class="num">2</span>
+    <div>
+      <span class="kicker">Security</span>
+      <h2>Secure the root user</h2>
+    </div>
+  </div>
+  <p class="time">5 minutes.</p>
+
+  <p>The root user is the account owner. You should use it only for account-level tasks.</p>
+  <ol>
+    <li>Sign in to the console as the root user.</li>
+    <li>Open the account menu (top right) → <strong>Security credentials</strong>.</li>
+    <li>Under <strong>Multi-factor authentication (MFA)</strong>, assign an authenticator app.</li>
+    <li>Store the recovery codes in your password manager.</li>
+    <li>Do <strong>not</strong> create a root access key. If one already exists, delete it.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Never use the root user for daily work.</strong>
+    No root access keys, no root credentials in scripts, no root credentials in
+    chat or in this repository.
+  </div>
+
+  <div class="done">Root MFA is active and there are no root access keys.</div>
+</section>
+
+<section id="step3" class="step">
+  <div class="step-head">
+    <span class="num">3</span>
+    <div>
+      <span class="kicker">Cost control</span>
+      <h2>Set a budget alarm</h2>
+    </div>
+  </div>
+  <p class="time">3 minutes.</p>
+
+  <ol>
+    <li>Open <strong>Billing and Cost Management</strong> → <strong>Budgets</strong>.</li>
+    <li>Choose <strong>Create budget</strong> → <strong>Monthly cost budget</strong>.</li>
+    <li>Name it <code>edge-platform-sandbox-monthly</code>.</li>
+    <li>Set the amount to <strong>$10</strong> (or a limit you are comfortable with).</li>
+    <li>Add your email as an alert recipient, for example at 80% of the budget.</li>
+    <li>Create the budget.</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>A budget is an alarm, not a hard cap.</strong>
+    AWS will email you when spending crosses the threshold, but it will not
+    automatically stop resources. Teardown at the end still matters.
+  </div>
+
+  <div class="done">The budget appears in Billing → Budgets and your email is subscribed.</div>
+</section>
+
+<section id="step4" class="step">
+  <div class="step-head">
+    <span class="num">4</span>
+    <div>
+      <span class="kicker">Identity</span>
+      <h2>Create your daily admin access</h2>
+    </div>
+  </div>
+  <p class="time">5–10 minutes.</p>
+
+  <p>
+    Stop using root. Create a separate admin identity for the console and CLI.
+    For a dedicated sandbox, the simple path is an IAM user with MFA. A stricter,
+    longer-term option is IAM Identity Center (SSO).
+  </p>
+
+  <h3>Option A — IAM admin user (simplest for a throwaway sandbox)</h3>
+  <ol>
+    <li>Open <a href="https://console.aws.amazon.com/iam/" target="_blank" rel="noreferrer">IAM</a> → <strong>Users</strong> → <strong>Create user</strong>.</li>
+    <li>Name it <code>edge-platform-admin</code>.</li>
+    <li>Check <strong>Provide user access to the AWS Management Console</strong>, choose a custom password, and require a password reset on first sign-in.</li>
+    <li>On the permissions step, choose <strong>Attach policies directly</strong> and select <strong>AdministratorAccess</strong>.</li>
+    <li>Create the user. Sign out of root, then sign in as <code>edge-platform-admin</code>.</li>
+    <li>In the new user's <strong>Security credentials</strong>, enable MFA with an authenticator app.</li>
+    <li>Still in <strong>Security credentials</strong>, choose <strong>Create access key</strong> → <strong>Command Line Interface (CLI)</strong> and download the CSV.</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>AdministratorAccess is acceptable only because this is a dedicated sandbox.</strong>
+    Do not attach it to a shared account. Delete the access key when the sandbox is
+    finished. Never paste the secret key into chat.
+  </div>
+
+  <details>
+    <summary>Option B — IAM Identity Center / SSO (better, no long-lived keys)</summary>
+    <p>
+      If you prefer SSO, open <a href="https://console.aws.amazon.com/singlesignon/" target="_blank" rel="noreferrer">IAM Identity Center</a>,
+      enable it, create a user for yourself, create a permission set with
+      <code>AdministratorAccess</code>, and assign it to the sandbox account.
+      Enabling Identity Center in a standalone account creates an AWS
+      Organization, which is fine for a sandbox.
+    </p>
+    <p>
+      Then use the access portal URL it gives you (it looks like
+      <code>https://d-xxxxxxxxxx.awsapps.com/start</code>) when configuring the CLI
+      in step 6. This avoids creating an IAM access key.
+    </p>
+  </details>
+
+  <div class="done">You can sign in as an admin user, MFA is active, and you have a CLI access key (Option A) or an SSO start URL (Option B).</div>
+</section>
+
+<section id="step5" class="step">
+  <div class="step-head">
+    <span class="num">5</span>
+    <div>
+      <span class="kicker">Tooling</span>
+      <h2>Install the AWS CLI</h2>
+    </div>
+  </div>
+  <p class="time">3 minutes.</p>
+
+  <p>On macOS, Homebrew is the quickest route if you already use it:</p>
+  <pre><code>brew install awscli
+aws --version</code></pre>
+
+  <p>Otherwise use the official package:</p>
+  <pre><code>curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+aws --version</code></pre>
+
+  <div class="done"><code>aws --version</code> prints AWS CLI 2.x.</div>
+</section>
+
+<section id="step6" class="step">
+  <div class="step-head">
+    <span class="num">6</span>
+    <div>
+      <span class="kicker">Access</span>
+      <h2>Configure the sandbox profile</h2>
+    </div>
+  </div>
+  <p class="time">3–5 minutes.</p>
+
+  <h3>With an IAM access key (Option A)</h3>
+  <pre><code>aws configure --profile edge-sandbox</code></pre>
+  <p>Enter the values from the CSV you downloaded:</p>
+  <ul>
+    <li><strong>AWS Access Key ID</strong> and <strong>Secret Access Key</strong></li>
+    <li><strong>Default region name:</strong> <code>ap-southeast-1</code></li>
+    <li><strong>Default output format:</strong> <code>json</code></li>
+  </ul>
+
+  <h3>With IAM Identity Center (Option B)</h3>
+  <pre><code>aws configure sso --profile edge-sandbox
+aws sso login --profile edge-sandbox</code></pre>
+  <p>
+    Use the access portal URL and region shown in IAM Identity Center. Choose the
+    sandbox account and the admin permission set when prompted. Set the CLI
+    region to <code>ap-southeast-1</code>.
+  </p>
+
+  <p>Verify the identity the CLI will use:</p>
+  <pre><code>aws sts get-caller-identity --profile edge-sandbox</code></pre>
+
+  <div class="callout">
+    <strong>The profile name is the hand-off.</strong>
+    The agent only needs the profile name <code>edge-sandbox</code>. It does not
+    need your access key or password.
+  </div>
+
+  <div class="done"><code>get-caller-identity</code> returns the sandbox account ID and an admin role/user.</div>
+</section>
+
+<section id="step7" class="step">
+  <div class="step-head">
+    <span class="num">7</span>
+    <div>
+      <span class="kicker">Readiness</span>
+      <h2>Verify the required services</h2>
+    </div>
+  </div>
+  <p class="time">2 minutes.</p>
+
+  <p>These commands should succeed. Empty lists are fine; an error is not.</p>
+  <pre><code>aws iot describe-endpoint \
+  --endpoint-type iot:Data-ATS \
+  --region ap-southeast-1 \
+  --profile edge-sandbox
+
+aws greengrassv2 list-components \
+  --region ap-southeast-1 \
+  --profile edge-sandbox
+
+aws s3api list-buckets --profile edge-sandbox</code></pre>
+
+  <p>
+    The IoT command prints an endpoint such as
+    <code>xxxxxxxxxxxx-ats.iot.ap-southeast-1.amazonaws.com</code>. That confirms
+    IoT Core is reachable in the chosen region.
+  </p>
+
+  <div class="callout warn">
+    <strong>If you get AccessDenied:</strong>
+    check the profile name, the region, and whether the identity really has
+    admin permissions. Do not widen permissions in a shared account; use the
+    dedicated sandbox.
+  </div>
+
+  <div class="done">IoT Core, Greengrass V2 and S3 commands all return successfully.</div>
+</section>
+
+<section id="step8" class="step">
+  <div class="step-head">
+    <span class="num">8</span>
+    <div>
+      <span class="kicker">Storage</span>
+      <h2>Create the sandbox bucket</h2>
+    </div>
+  </div>
+  <p class="time">2 minutes.</p>
+
+  <p>
+    Greengrass component artifacts need an S3 bucket. The name must be globally
+    unique. Use the account ID in the name:
+  </p>
+
+  <pre><code>ACCOUNT_ID="$(aws sts get-caller-identity \
+  --profile edge-sandbox \
+  --query Account --output text)"
+
+BUCKET="edge-platform-sandbox-${ACCOUNT_ID}-ap-southeast-1"
+
+aws s3api create-bucket \
+  --bucket "$BUCKET" \
+  --region ap-southeast-1 \
+  --create-bucket-configuration LocationConstraint=ap-southeast-1 \
+  --profile edge-sandbox
+
+aws s3api put-public-access-block \
+  --bucket "$BUCKET" \
+  --public-access-block-configuration \
+    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true \
+  --profile edge-sandbox
+
+echo "$BUCKET"
+aws s3 ls --profile edge-sandbox</code></pre>
+
+  <p>
+    If the bucket name is already taken, add a short suffix such as
+    <code>-01</code>. Keep the bucket private.
+  </p>
+
+  <div class="done">The bucket exists, public access is blocked, and <code>aws s3 ls</code> shows it.</div>
+</section>
+
+<section id="step9" class="step">
+  <div class="step-head">
+    <span class="num">9</span>
+    <div>
+      <span class="kicker">Hand-off</span>
+      <h2>Send the agent four facts</h2>
+    </div>
+  </div>
+  <p class="time">1 minute.</p>
+
+  <pre><code>Account ID: 123456789012
+Region: ap-southeast-1
+Profile: edge-sandbox
+Bucket: edge-platform-sandbox-123456789012-ap-southeast-1
+Confirmed non-production: yes</code></pre>
+
+  <div class="callout danger">
+    <strong>Do not send:</strong> root password, IAM secret access key, MFA codes,
+    or a session token. The agent only needs the profile name. Never paste
+    secrets into chat.
+  </div>
+
+  <h3>What the agent will do</h3>
+  <ol>
+    <li>Verify the identity and region with <code>get-caller-identity</code>.</li>
+    <li>Provision a test thing, certificate, IoT policy, IAM role and role alias.</li>
+    <li>Bootstrap the nucleus and make <code>greengrass-cli</code> available.</li>
+    <li>Publish the collector component to the sandbox bucket.</li>
+    <li>Deploy it to the test core and verify telemetry.</li>
+    <li>Tear everything down and report what was deleted.</li>
+  </ol>
+
+  <div class="done">The agent can run <code>aws sts get-caller-identity --profile edge-sandbox</code> successfully.</div>
+</section>
+
+<section id="step10" class="step">
+  <div class="step-head">
+    <span class="num">10</span>
+    <div>
+      <span class="kicker">Cleanup</span>
+      <h2>Tear it down</h2>
+    </div>
+  </div>
+  <p class="time">5–10 minutes.</p>
+
+  <p>Either the agent performs this or you do it manually. Delete in this order:</p>
+  <ol>
+    <li>Cancel/delete Greengrass deployments.</li>
+    <li>Delete the published component and its versions.</li>
+    <li>Delete the test thing and thing group.</li>
+    <li>Deactivate and delete the test certificate.</li>
+    <li>Detach and delete the test IoT policy.</li>
+    <li>Delete the IAM role alias, inline policies and role.</li>
+    <li>Empty and delete the S3 bucket.</li>
+    <li>Delete the CloudWatch log groups created during the test.</li>
+    <li>Delete the IAM access key (Option A) if the sandbox is finished.</li>
+    <li>Optionally close the AWS account if it was created only for this test.</li>
+  </ol>
+
+  <div class="callout">
+    <strong>Find resources by tag.</strong>
+    The agent tags resources with <code>project=edge-platform</code> and
+    <code>environment=sandbox</code>. Use those tags to find leftovers.
+  </div>
+
+  <div class="done">The sandbox has no running deployments or billable test resources, and the S3 bucket is empty.</div>
+</section>
+
+<section id="appendix-a" class="appendix">
+  <h2>Appendix A — scoped policy (optional)</h2>
+  <p>
+    For a dedicated sandbox, <code>AdministratorAccess</code> is the simplest and
+    least error-prone choice. If you need tighter scope, create a customer-managed
+    policy from the document below and attach it to the admin user or permission
+    set. Replace <code>&lt;ACCOUNT_ID&gt;</code> first.
+  </p>
+
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Identity",
+      "Effect": "Allow",
+      "Action": ["sts:GetCallerIdentity"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IoT",
+      "Effect": "Allow",
+      "Action": [
+        "iot:CreateThing",
+        "iot:DescribeThing",
+        "iot:DeleteThing",
+        "iot:CreateThingGroup",
+        "iot:DeleteThingGroup",
+        "iot:AddThingToThingGroup",
+        "iot:CreateKeysAndCertificate",
+        "iot:DescribeCertificate",
+        "iot:UpdateCertificate",
+        "iot:DeleteCertificate",
+        "iot:CreatePolicy",
+        "iot:GetPolicy",
+        "iot:DeletePolicy",
+        "iot:AttachPolicy",
+        "iot:DetachPolicy",
+        "iot:DescribeEndpoint",
+        "iot:ListThings",
+        "iot:ListThingGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IAM",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:GetRole",
+        "iam:DeleteRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:CreateRoleAlias",
+        "iam:GetRoleAlias",
+        "iam:DeleteRoleAlias",
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/edge-platform-sandbox-*",
+        "arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/edge-platform-sandbox-*/*"
+      ]
+    },
+    {
+      "Sid": "S3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:PutBucketPublicAccessBlock"
+      ],
+      "Resource": [
+        "arn:aws:s3:::edge-platform-sandbox-*",
+        "arn:aws:s3:::edge-platform-sandbox-*/*"
+      ]
+    },
+    {
+      "Sid": "S3ListBuckets",
+      "Effect": "Allow",
+      "Action": ["s3:ListAllMyBuckets"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Greengrass",
+      "Effect": "Allow",
+      "Action": [
+        "greengrass:CreateComponentVersion",
+        "greengrass:DescribeComponent",
+        "greengrass:ListComponents",
+        "greengrass:DeleteComponent",
+        "greengrass:CreateDeployment",
+        "greengrass:GetDeployment",
+        "greengrass:ListDeployments",
+        "greengrass:CancelDeployment",
+        "greengrass:GetComponentVersionArtifact",
+        "greengrass:TagResource",
+        "greengrass:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Logs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:DeleteLogGroup"
+      ],
+      "Resource": "arn:aws:logs:ap-southeast-1:&lt;ACCOUNT_ID&gt;:log-group:/aws/greengrass/*"
+    }
+  ]
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>If a specific action is denied, add that action.</strong>
+    Do not replace the whole policy with <code>*</code> in a shared account.
+  </div>
+</section>
+
+<section id="appendix-b" class="appendix">
+  <h2>Appendix B — command cheat sheet</h2>
+
+  <h3>Daily login and identity</h3>
+<pre><code># SSO
+aws sso login --profile edge-sandbox
+
+# Either method
+aws sts get-caller-identity --profile edge-sandbox</code></pre>
+
+  <h3>Region sanity check</h3>
+<pre><code>aws configure get region --profile edge-sandbox
+aws iot describe-endpoint \
+  --endpoint-type iot:Data-ATS \
+  --region ap-southeast-1 \
+  --profile edge-sandbox</code></pre>
+
+  <h3>Inspect sandbox resources</h3>
+<pre><code>aws iot list-things --profile edge-sandbox
+aws iot list-thing-groups --profile edge-sandbox
+aws greengrassv2 list-components --region ap-southeast-1 --profile edge-sandbox
+aws greengrassv2 list-deployments --region ap-southeast-1 --profile edge-sandbox
+aws s3 ls --profile edge-sandbox
+aws logs describe-log-groups \
+  --log-group-name-prefix /aws/greengrass \
+  --region ap-southeast-1 \
+  --profile edge-sandbox</code></pre>
+
+  <h3>Bucket</h3>
+<pre><code>BUCKET="edge-platform-sandbox-&lt;ACCOUNT_ID&gt;-ap-southeast-1"
+aws s3 ls "s3://${BUCKET}" --profile edge-sandbox</code></pre>
+
+  <div class="callout">
+    <strong>Do not run broad delete commands in a shared account.</strong>
+    The sandbox is dedicated. The agent will delete only resources it created and
+    tagged, after confirmation.
+  </div>
+</section>
+
+<section id="appendix-c" class="appendix">
+  <h2>Appendix C — troubleshooting</h2>
+
+  <h3>“SSO session expired”</h3>
+  <p>Run <code>aws sso login --profile edge-sandbox</code> and retry.</p>
+
+  <h3>“AccessDenied”</h3>
+  <ul>
+    <li>Confirm <code>--profile edge-sandbox</code> is present.</li>
+    <li>Confirm <code>--region ap-southeast-1</code> is correct.</li>
+    <li>Confirm the identity has the required policy and no organisation SCP blocks it.</li>
+    <li>Check that you are not accidentally using the root or another account.</li>
+  </ul>
+
+  <h3>“BucketAlreadyExists”</h3>
+  <p>S3 bucket names are globally unique. Add a suffix to the bucket name.</p>
+
+  <h3>“Not authorized to perform iot:DescribeEndpoint”</h3>
+  <p>The identity is missing IoT permissions, or the region is not enabled for your account.</p>
+
+  <h3>The budget alarm did not stop spending</h3>
+  <p>Budgets are notifications, not hard limits. Teardown is still required.</p>
+
+  <h3>Account verification is taking a long time</h3>
+  <p>AWS may need additional identity or payment verification. Check the signup email and the console banner. Do not create duplicate accounts.</p>
+
+  <h3>“I lost the root MFA device”</h3>
+  <p>Use the recovery codes you saved. If those are lost, follow the AWS account recovery process; this is intentionally difficult.</p>
+</section>
+
+<section class="footer">
+  <p>
+    <strong>Edge Platform · AWS sandbox setup.</strong>
+    This guide is for a dedicated, disposable sandbox only. No production
+    account, no root access keys, no secrets in chat.
+  </p>
+  <p class="small">
+    Region default: <code>ap-southeast-1</code> · Profile: <code>edge-sandbox</code> ·
+    Component namespace: <code>io.github.doudouba0309.EdgePlatform</code>
+  </p>
+</section>
+
+</main>
+</div>
+</body>
+</html>
