@@ -172,18 +172,25 @@ Nothing else in this repository is destructive.
 
 ## Build and verification
 
-`make check`, `make verify` and `make smoke` are the intended gates. They are
-defined alongside the toolchain and will be documented here when they exist. Do
-not invent commands that do not run, and do not claim a change is verified by a
-command that has not been defined. Until the Makefile lands, the running
-equivalents are `.venv/bin/pytest -q` for unit tests,
-`./scripts/smoke-local.sh` for the end-to-end mTLS/spool check, and
-`./scripts/smoke-image.sh` for the two-architecture image boot check.
+Three gates, all runnable:
+
+- `make check` — ruff format/check, `mypy --strict`, unit tests.
+- `make verify` — `check` plus `scripts/smoke-local.sh`, the local mTLS and
+  store-and-forward outage/replay check.
+- `make smoke` — `scripts/smoke-image.sh`, which builds and boots both Tier 1
+  images.
+
+`make check` needs no Docker. `make verify` and `make smoke` need Docker and the
+host Mosquitto clients. Do not invent commands that do not run, and do not
+claim a change is verified by a command that has not been defined.
 
 ## Definition of done
 
 A change is complete when all of these hold:
 
+- [ ] `make check` passes
+- [ ] `make verify` passes for transport or spool changes
+- [ ] `make smoke` passes for image changes
 - [ ] new behaviour has a test that fails without the change
 - [ ] `docs/` updated if behaviour, config or operations changed
 - [ ] the committed JSON Schema regenerated if the wire format moved

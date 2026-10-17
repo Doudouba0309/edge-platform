@@ -18,15 +18,11 @@ _DEVICE_ID = re.compile(DEVICE_ID_PATTERN)
 
 def validate_gateway_id(value: str) -> str:
     if not _GATEWAY_ID.fullmatch(value):
-        raise ValueError(
-            f"invalid gateway_id {value!r}: must match {GATEWAY_ID_PATTERN!r}"
-        )
+        raise ValueError(f"invalid gateway_id {value!r}: must match {GATEWAY_ID_PATTERN!r}")
     return value
 
 
 def validate_device_id(value: str) -> str:
     if not _DEVICE_ID.fullmatch(value):
-        raise ValueError(
-            f"invalid device_id {value!r}: must match {DEVICE_ID_PATTERN!r}"
-        )
+        raise ValueError(f"invalid device_id {value!r}: must match {DEVICE_ID_PATTERN!r}")
     return value

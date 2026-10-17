@@ -66,9 +66,7 @@ class Pipeline:
         self.stats = PipelineStats()
         self.failed = asyncio.Event()
 
-        self._queue: asyncio.Queue[Sample | object] = asyncio.Queue(
-            maxsize=cfg.queue_max
-        )
+        self._queue: asyncio.Queue[Sample | object] = asyncio.Queue(maxsize=cfg.queue_max)
         self._stop_token = object()
         self._buffer: list[Sample] = []
         self._seq = 0
@@ -105,8 +103,7 @@ class Pipeline:
             self.stats.dropped_queue_full += 1
             if self.stats.dropped_queue_full % 100 == 1:
                 log.error(
-                    "pipeline queue full (%d): %d samples dropped so far - "
-                    "sink is not keeping up",
+                    "pipeline queue full (%d): %d samples dropped so far - sink is not keeping up",
                     self.cfg.queue_max,
                     self.stats.dropped_queue_full,
                 )
@@ -117,14 +114,10 @@ class Pipeline:
             return
         self._loop = asyncio.get_running_loop()
         self._thread_id = threading.get_ident()
-        self._consumer_task = asyncio.create_task(
-            self._consume(), name="pipeline-consume"
-        )
+        self._consumer_task = asyncio.create_task(self._consume(), name="pipeline-consume")
         if self.spool.enabled:
             self.stats.spool_pending = await asyncio.to_thread(self.spool.count)
-            self._replay_task = asyncio.create_task(
-                self._replay_loop(), name="pipeline-replay"
-            )
+            self._replay_task = asyncio.create_task(self._replay_loop(), name="pipeline-replay")
 
     async def wait(self) -> None:
         if self._consumer_task is not None:
@@ -244,9 +237,7 @@ class Pipeline:
                 except SinkUnavailable as exc:
                     self.stats.send_failures += 1
                     self.stats.last_error = str(exc)
-                    log.warning(
-                        "sink unavailable, buffering batch #%d: %s", batch.seq, exc
-                    )
+                    log.warning("sink unavailable, buffering batch #%d: %s", batch.seq, exc)
 
             stored = await asyncio.to_thread(self.spool.append, payload)
             if stored:

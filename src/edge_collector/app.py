@@ -103,9 +103,7 @@ class CollectorApp:
             await self.health.start()
 
             stop_task = asyncio.create_task(self._stop.wait(), name="stop-signal")
-            fail_task = asyncio.create_task(
-                self.pipeline.failed.wait(), name="pipeline-failed"
-            )
+            fail_task = asyncio.create_task(self.pipeline.failed.wait(), name="pipeline-failed")
             done, _ = await asyncio.wait(
                 {stop_task, fail_task}, return_when=asyncio.FIRST_COMPLETED
             )

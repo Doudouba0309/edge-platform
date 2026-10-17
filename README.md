@@ -14,13 +14,24 @@ The Phase 0 runtime skeleton runs from a YAML config with a deterministic
 synthetic source:
 
 ```bash
-uv venv --python 3.12 .venv
-uv pip install --python .venv/bin/python -e ".[dev]"
+make install
 .venv/bin/python -m edge_collector --config config/collector.yaml
 ```
 
 Health endpoints are served on `http://127.0.0.1:8081`: `/healthz`, `/readyz`
-and `/stats`. Run the tests with `.venv/bin/pytest -q`.
+and `/stats`.
+
+## Verification
+
+```bash
+make check    # ruff format/check + mypy --strict + unit tests
+make verify   # check + local mTLS/spool smoke (Docker, mosquitto_pub)
+make smoke    # build both Tier 1 images and boot-smoke each
+```
+
+`make check` needs no Docker. `make verify` and `make smoke` expect Docker and
+the host Mosquitto clients. CI runs all three gates on every push to `main` and
+on pull requests.
 
 ## End-to-end smoke
 

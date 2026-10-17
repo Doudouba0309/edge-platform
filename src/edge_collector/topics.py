@@ -22,10 +22,7 @@ STATUS = "status"
 
 def telemetry_topic(gateway_id: str, device_id: str) -> str:
     """Topic telemetry for one device is published to."""
-    return (
-        f"edge/{validate_gateway_id(gateway_id)}/"
-        f"{validate_device_id(device_id)}/{TELEMETRY}"
-    )
+    return f"edge/{validate_gateway_id(gateway_id)}/{validate_device_id(device_id)}/{TELEMETRY}"
 
 
 def status_topic(gateway_id: str) -> str:

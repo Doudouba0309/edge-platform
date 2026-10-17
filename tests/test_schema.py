@@ -27,13 +27,10 @@ SCHEMA_PATH: Path = repo_schema_path()
 
 
 def test_committed_schema_matches_the_models() -> None:
-    assert SCHEMA_PATH.exists(), (
-        f"{SCHEMA_PATH} is missing - run `python -m edge_collector.schema`"
-    )
+    assert SCHEMA_PATH.exists(), f"{SCHEMA_PATH} is missing - run `python -m edge_collector.schema`"
     committed = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     assert committed == batch_json_schema(), (
-        "schemas/telemetry-batch.schema.json is out of date. "
-        "Run `python -m edge_collector.schema`."
+        "schemas/telemetry-batch.schema.json is out of date. Run `python -m edge_collector.schema`."
     )
 
 
@@ -57,10 +54,7 @@ def test_schema_pins_the_identifier_grammar() -> None:
     schema = load_schema(SCHEMA_PATH)
     assert schema["properties"]["gateway_id"]["pattern"] == GATEWAY_ID_PATTERN
     assert schema["properties"]["device_id"]["pattern"] == DEVICE_ID_PATTERN
-    assert (
-        schema["$defs"]["Sample"]["properties"]["device_id"]["pattern"]
-        == DEVICE_ID_PATTERN
-    )
+    assert schema["$defs"]["Sample"]["properties"]["device_id"]["pattern"] == DEVICE_ID_PATTERN
 
 
 def test_schema_requires_the_envelope_fields() -> None:

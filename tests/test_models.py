@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -17,7 +17,7 @@ def _sample(**overrides: object) -> Sample:
         "device_id": "plc-line-1",
         "metric": "temperature",
         "value": 25.221,
-        "ts": datetime(2026, 10, 16, 10, 0, tzinfo=timezone.utc),
+        "ts": datetime(2026, 10, 16, 10, 0, tzinfo=UTC),
         "source": SourceKind.OPCUA,
     }
     payload.update(overrides)
@@ -26,20 +26,20 @@ def _sample(**overrides: object) -> Sample:
 
 def test_naive_sample_timestamp_is_treated_as_utc() -> None:
     sample = _sample(ts=datetime(2026, 10, 16, 10, 0))
-    assert sample.ts == datetime(2026, 10, 16, 10, 0, tzinfo=timezone.utc)
+    assert sample.ts == datetime(2026, 10, 16, 10, 0, tzinfo=UTC)
     assert sample.ts.tzinfo is not None
 
 
 def test_aware_sample_timestamp_is_converted_to_utc() -> None:
     local = datetime(2026, 10, 16, 12, 0, tzinfo=timezone(timedelta(hours=2)))
     sample = _sample(ts=local)
-    assert sample.ts == datetime(2026, 10, 16, 10, 0, tzinfo=timezone.utc)
+    assert sample.ts == datetime(2026, 10, 16, 10, 0, tzinfo=UTC)
     assert sample.ts.utcoffset() == timedelta(0)
 
 
 def test_batch_produced_at_is_normalised_to_utc(make_batch) -> None:
     batch = make_batch(produced_at=datetime(2026, 10, 16, 10, 0))
-    assert batch.produced_at == datetime(2026, 10, 16, 10, 0, tzinfo=timezone.utc)
+    assert batch.produced_at == datetime(2026, 10, 16, 10, 0, tzinfo=UTC)
     assert batch.produced_at.tzinfo is not None
 
 
@@ -127,10 +127,7 @@ def test_identifier_patterns_are_exported() -> None:
 
 
 def test_telemetry_topic_is_the_frozen_v1_shape() -> None:
-    assert (
-        telemetry_topic("gw-factory-7", "plc-line-1")
-        == "edge/gw-factory-7/plc-line-1/telemetry"
-    )
+    assert telemetry_topic("gw-factory-7", "plc-line-1") == "edge/gw-factory-7/plc-line-1/telemetry"
 
 
 def test_status_topic_is_gateway_scoped() -> None:
@@ -156,6 +153,4 @@ def test_status_topic_rejects_unsafe_gateway_ids(bad: str) -> None:
 
 
 def test_topic_allows_thing_name_safe_characters() -> None:
-    assert (
-        telemetry_topic("GW_1:edge", "line-1.2") == "edge/GW_1:edge/line-1.2/telemetry"
-    )
+    assert telemetry_topic("GW_1:edge", "line-1.2") == "edge/GW_1:edge/line-1.2/telemetry"

@@ -10,8 +10,8 @@ from.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -24,7 +24,7 @@ SCHEMA_VERSION = "1.0"
 ScalarValue = float | int | str | bool
 
 
-class Quality(str, Enum):
+class Quality(StrEnum):
     """OPC UA style quality, kept so downstream can filter bad data."""
 
     GOOD = "good"
@@ -33,7 +33,7 @@ class Quality(str, Enum):
     STALE = "stale"
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     """Protocol family a sample was normalised from."""
 
     OPCUA = "opcua"
@@ -44,14 +44,14 @@ class SourceKind(str, Enum):
 
 def utcnow() -> datetime:
     """Timezone-aware UTC now; never a naive local timestamp."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _as_utc(value: datetime) -> datetime:
     """Treat naive input as UTC and convert aware input to UTC."""
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 class Sample(BaseModel):

@@ -23,9 +23,7 @@ def _source(
         interval_s=interval_s,
         metrics=metrics
         or [
-            SyntheticMetricConfig(
-                name="temperature", value=25.0, step=0.5, unit="degC"
-            ),
+            SyntheticMetricConfig(name="temperature", value=25.0, step=0.5, unit="degC"),
             SyntheticMetricConfig(name="pressure", value=101.3, unit="kPa"),
         ],
     )

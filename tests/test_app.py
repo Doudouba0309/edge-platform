@@ -48,9 +48,7 @@ def _config(*, health_enabled: bool = False, **batching: object) -> CollectorCon
 
 async def _get(port: int, path: str) -> bytes:
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
-    writer.write(
-        f"GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".encode()
-    )
+    writer.write(f"GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".encode())
     await writer.drain()
     data = await reader.read()
     writer.close()

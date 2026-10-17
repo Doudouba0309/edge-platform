@@ -22,11 +22,7 @@ def main() -> int:
         print(f"no capture file at {path}", file=sys.stderr)
         return 1
 
-    records = [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line
-    ]
+    records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
     telemetry = [record for record in records if record["topic"].endswith("/telemetry")]
     status = [record for record in records if record["topic"].endswith("/status")]
 

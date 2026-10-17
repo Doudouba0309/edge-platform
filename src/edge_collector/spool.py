@@ -104,9 +104,7 @@ class Spool:
             self._enforce_limits_locked()
             if row_id is None:
                 return False
-            kept = self._conn.execute(
-                "SELECT 1 FROM spool WHERE id = ?", (row_id,)
-            ).fetchone()
+            kept = self._conn.execute("SELECT 1 FROM spool WHERE id = ?", (row_id,)).fetchone()
             return kept is not None
 
     def _enforce_limits_locked(self) -> None:
@@ -161,10 +159,7 @@ class Spool:
                 "SELECT id, created_at, payload FROM spool ORDER BY id LIMIT ?",
                 (limit,),
             ).fetchall()
-            return [
-                SpoolRecord(id=row[0], created_at=row[1], payload=row[2])
-                for row in rows
-            ]
+            return [SpoolRecord(id=row[0], created_at=row[1], payload=row[2]) for row in rows]
 
     def delete(self, ids: list[int]) -> None:
         if not ids:
@@ -200,9 +195,7 @@ class Spool:
     def _bytes_locked(self) -> int:
         if self._conn is None:
             return 0
-        row = self._conn.execute(
-            "SELECT COALESCE(SUM(LENGTH(payload)), 0) FROM spool"
-        ).fetchone()
+        row = self._conn.execute("SELECT COALESCE(SUM(LENGTH(payload)), 0) FROM spool").fetchone()
         return int(row[0]) if row else 0
 
     def _size_locked(self) -> int:

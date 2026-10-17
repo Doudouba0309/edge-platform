@@ -44,17 +44,13 @@ def main() -> None:
         client.subscribe("edge/+/status", qos=1)
         print("subscribed", flush=True)
 
-    def _on_message(
-        client: mqtt.Client, userdata: Any, message: mqtt.MQTTMessage
-    ) -> None:
+    def _on_message(client: mqtt.Client, userdata: Any, message: mqtt.MQTTMessage) -> None:
         try:
             payload = json.loads(message.payload)
         except json.JSONDecodeError:
             payload = message.payload.decode("utf-8", errors="replace")
         with out.open("a", encoding="utf-8") as handle:
-            handle.write(
-                json.dumps({"topic": message.topic, "payload": payload}) + "\n"
-            )
+            handle.write(json.dumps({"topic": message.topic, "payload": payload}) + "\n")
             handle.flush()
         print(f"message {message.topic}", flush=True)
 

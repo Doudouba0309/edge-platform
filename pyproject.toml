@@ -14,8 +14,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "jsonschema>=4.23",
+    "mypy>=1.11",
     "pytest>=8.2",
     "pytest-asyncio>=1.0,<2",
+    "ruff>=0.6",
+    "types-PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -33,3 +36,23 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["N818"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["paho.*"]
+ignore_missing_imports = true

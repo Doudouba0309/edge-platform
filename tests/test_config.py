@@ -85,9 +85,7 @@ sources:
         load_config(path)
 
 
-def test_env_var_selects_the_config_file(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_env_var_selects_the_config_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     path = _write(
         tmp_path,
         "env.yaml",

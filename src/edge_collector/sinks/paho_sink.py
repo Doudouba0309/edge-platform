@@ -93,9 +93,7 @@ class PahoSink(Sink):
 
         client.connect_async(self.host, self.port, keepalive=self._keepalive_s)
         client.loop_start()
-        connected = await asyncio.to_thread(
-            self._connected.wait, self._connect_timeout_s
-        )
+        connected = await asyncio.to_thread(self._connected.wait, self._connect_timeout_s)
         if connected:
             log.info("%s: connected to %s:%d", self.name, self.host, self.port)
         else:
@@ -134,9 +132,7 @@ class PahoSink(Sink):
         if client is None:
             raise SinkUnavailable(f"{self.name}: not started")
         if not self._connected.is_set():
-            raise SinkUnavailable(
-                f"{self.name}: not connected to {self.host}:{self.port}"
-            )
+            raise SinkUnavailable(f"{self.name}: not connected to {self.host}:{self.port}")
 
         payload = batch.to_json()
         topic = self.topic_for(batch)
@@ -147,9 +143,7 @@ class PahoSink(Sink):
             if self.qos > 0:
                 await asyncio.to_thread(info.wait_for_publish, self._publish_timeout_s)
                 if not info.is_published():
-                    raise SinkUnavailable(
-                        f"{self.name}: publish confirmation timed out"
-                    )
+                    raise SinkUnavailable(f"{self.name}: publish confirmation timed out")
         except SinkUnavailable as exc:
             self.stats.failed += 1
             self.stats.last_error = str(exc)
@@ -191,9 +185,7 @@ class PahoSink(Sink):
     ) -> None:
         self._connected.clear()
         if reason_code.is_failure:
-            log.warning(
-                "%s: disconnected (%s); paho will retry", self.name, reason_code
-            )
+            log.warning("%s: disconnected (%s); paho will retry", self.name, reason_code)
 
     @property
     def healthy(self) -> bool:

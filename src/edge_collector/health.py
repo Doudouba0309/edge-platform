@@ -62,9 +62,7 @@ class HealthServer:
             await self._server.wait_closed()
             self._server = None
 
-    async def _handle(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ) -> None:
+    async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
             request_line = await asyncio.wait_for(reader.readline(), timeout=5)
             parts = request_line.decode("latin-1").split()

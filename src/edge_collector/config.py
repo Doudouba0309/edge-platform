@@ -107,9 +107,7 @@ class SyntheticSourceConfig(BaseModel):
     @model_validator(mode="after")
     def _metrics_required_when_enabled(self) -> SyntheticSourceConfig:
         if self.enabled and not self.metrics:
-            raise ValueError(
-                "synthetic source is enabled but no metrics are configured"
-            )
+            raise ValueError("synthetic source is enabled but no metrics are configured")
         return self
 
 
