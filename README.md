@@ -8,6 +8,8 @@ Design documents live under `docs/`:
 - [Edge Platform Roadmap](docs/edge-platform-roadmap.html)
 - [Open Questions and Decision Register](docs/open-questions.md)
 
+Implementation decisions are recorded under [`docs/decisions/`](docs/decisions/).
+
 ## Local runtime
 
 The Phase 0 runtime skeleton runs from a YAML config with a deterministic
@@ -27,6 +29,7 @@ and `/stats`.
 make check    # ruff format/check + mypy --strict + unit tests
 make verify   # check + local mTLS/spool smoke (Docker, mosquitto_pub)
 make smoke    # build both Tier 1 images and boot-smoke each
+make sbom     # generate CycloneDX SBOMs for both images (after make smoke)
 ```
 
 `make check` needs no Docker. `make verify` and `make smoke` expect Docker and
@@ -58,3 +61,6 @@ broker, validates telemetry, checks RSS against the 150 MB ceiling and verifies
 SIGTERM. It requires Docker/buildx and `mosquitto_pub`. The container config is
 [`config/collector-container.yaml`](config/collector-container.yaml); images are
 local artifacts and are not published by this script.
+
+`make sbom` scans both images with Syft and writes CycloneDX JSON to
+`var/sbom/`; CI uploads those files as artifacts.

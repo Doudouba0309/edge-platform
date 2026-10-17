@@ -51,3 +51,11 @@ jobs:
         run: make verify
       - name: Build and boot both Tier 1 images
         run: make smoke
+      - name: Generate CycloneDX SBOMs
+        run: make sbom
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: var/sbom/*.cdx.json
+          if-no-files-found: error

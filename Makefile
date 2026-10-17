@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: help install format lint test check verify smoke
+.PHONY: help install format lint test check verify smoke sbom
 
 help:
 	@printf '%s\n' \
@@ -16,7 +16,8 @@ help:
 		'test     unit tests' \
 		'check    lint + test (no Docker required)' \
 		'verify   check + local mTLS/spool smoke (Docker required)' \
-		'smoke    build both Tier 1 images and boot-smoke each (Docker required)'
+		'smoke    build both Tier 1 images and boot-smoke each (Docker required)' \
+		'sbom     generate CycloneDX SBOMs for both images (after make smoke)'
 
 install:
 	@if [ ! -x "$(PYTHON)" ]; then uv venv --python 3.12 $(VENV); fi
@@ -41,3 +42,6 @@ verify: check
 
 smoke:
 	./scripts/smoke-image.sh
+
+sbom:
+	./scripts/sbom.sh
