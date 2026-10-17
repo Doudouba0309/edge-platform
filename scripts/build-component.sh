@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPONENT_NAME="${GG_COMPONENT_NAME:-io.github.doudouba0309.EdgePlatform.Collector}"
-COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.7}"
+COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.8}"
 ARTIFACT_NAME="EdgeCollector-${COMPONENT_VERSION}.zip"
 ARTIFACT_STEM="EdgeCollector-${COMPONENT_VERSION}"
 BUCKET="${GG_BUCKET:-edge-platform-sandbox-ACCOUNT-ap-southeast-1}"
@@ -22,6 +22,7 @@ ROLE_ALIAS="${GG_ROLE_ALIAS:-edge-platform-sandbox-TESRoleAlias}"
 GATEWAY_ID="${GG_GATEWAY_ID:-$THING_NAME}"
 DEVICE_ID="${GG_DEVICE_ID:-plc-line-1}"
 PYTHON="${PYTHON:-python3}"
+REQUIREMENTS="$ROOT/deploy/greengrass/component-requirements.txt"
 
 BUILD_DIR="$ROOT/build/component"
 PROJECT_WHEEL_DIR="$BUILD_DIR/project-wheel"
@@ -64,10 +65,7 @@ download_wheels() {
     --python-version 3.12 \
     --implementation cp \
     --abi cp312 \
-    "paho-mqtt>=2.1,<3" \
-    "pydantic>=2.9,<3" \
-    "PyYAML>=6.0,<7" \
-    "awsiotsdk>=1.22,<2" >/dev/null
+    -r "$REQUIREMENTS" >/dev/null
   cp "$dest"/*.whl "$ARTIFACT_DIR/wheels/"
 }
 

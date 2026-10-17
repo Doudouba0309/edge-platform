@@ -54,6 +54,7 @@ class CollectorApp:
             snapshot=self._snapshot,
             interval_s=cfg.status_interval_s,
             enabled=cfg.status_enabled,
+            component_version=cfg.component_version,
         )
         self._stop = asyncio.Event()
 
@@ -89,6 +90,12 @@ class CollectorApp:
             "path": str(self.spool.path),
             "pending": self.pipeline.stats.spool_pending,
         }
+        state["status"] = {
+            "enabled": self.status.enabled,
+            "sent": self.status.sent,
+            "failed": self.status.failed,
+            "last_error": self.status.last_error,
+        }
         state["ready"] = all(source.healthy for source in self.sources)
         return state
 
@@ -98,6 +105,7 @@ class CollectorApp:
         log_token = set_log_context(
             gateway_id=self.cfg.gateway_id,
             service_version=collector_version(),
+            component_version=self.cfg.component_version,
         )
 
         if handle_signals:

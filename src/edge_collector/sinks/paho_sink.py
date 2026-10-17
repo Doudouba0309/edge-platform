@@ -127,17 +127,6 @@ class PahoSink(Sink):
         except Exception as exc:  # pragma: no cover - best effort
             log.debug("%s: status publish failed: %s", self.name, exc)
 
-    async def announce(self, state: bytes) -> None:
-        """Publish retained gateway presence on the status topic."""
-        client = self._client
-        if client is None or self._status_topic is None or not self._connected.is_set():
-            return
-        try:
-            info = client.publish(self._status_topic, state, qos=1, retain=True)
-            await asyncio.to_thread(info.wait_for_publish, self._publish_timeout_s)
-        except Exception as exc:  # pragma: no cover - best effort
-            log.debug("%s: status announce failed: %s", self.name, exc)
-
     async def send(self, batch: Batch) -> None:
         client = self._client
         if client is None:
@@ -183,8 +172,6 @@ class PahoSink(Sink):
             return
         self._connected.set()
         self.stats.last_error = None
-        if self._status_topic is not None:
-            client.publish(self._status_topic, b"online", qos=1, retain=True)
 
     def _on_disconnect(
         self,

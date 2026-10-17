@@ -7,7 +7,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from edge_collector.config import GreengrassSinkConfig, MqttSinkConfig
+from edge_collector.config import ConfigError, GreengrassSinkConfig, MqttSinkConfig
 from edge_collector.sinks import (
     GreengrassIpcSink,
     LogSink,
@@ -147,3 +147,23 @@ async def test_greengrass_sink_publishes_status(make_batch) -> None:
 
     assert fake.calls[0]["topic_name"] == "edge/dev-gateway-01/status"
     assert fake.calls[0]["payload"] == b'{"state":"online"}'
+
+
+def test_mqtt_sink_uses_json_last_will() -> None:
+    sink = MqttSink(MqttSinkConfig(), gateway_id="dev-gateway-01")
+    assert sink._will is not None
+    payload = json.loads(sink._will[1])
+    assert payload["state"] == "offline"
+    assert payload["event"] == "lwt"
+    assert payload["gateway_id"] == "dev-gateway-01"
+
+
+def test_mqtt_sink_rejects_client_id_mismatch_for_iot_core() -> None:
+    with pytest.raises(ConfigError):
+        MqttSink(
+            MqttSinkConfig(
+                host="example-ats.iot.ap-southeast-1.amazonaws.com",
+                client_id="not-the-thing",
+            ),
+            gateway_id="edge-platform-sandbox-core",
+        )

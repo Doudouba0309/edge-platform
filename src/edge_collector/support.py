@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import shutil
 import sqlite3
@@ -32,8 +33,12 @@ def _version() -> str:
 
 
 def _tail_text(path: Path, max_bytes: int = _MAX_LOG_BYTES) -> str:
-    data = path.read_bytes()
-    return data[-max_bytes:].decode("utf-8", errors="replace")
+    size = path.stat().st_size
+    with path.open("rb") as handle:
+        if size > max_bytes:
+            handle.seek(size - max_bytes)
+        data = handle.read()
+    return data.decode("utf-8", errors="replace")
 
 
 def _spool_summary(config_path: Path) -> dict[str, Any]:
@@ -72,6 +77,7 @@ def build_support_bundle(
     output_path: Path,
     log_files: list[Path] | None = None,
     stats_url: str | None = None,
+    component_version: str = "unknown",
 ) -> Path:
     """Write a redacted ZIP and return its path."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -79,6 +85,7 @@ def build_support_bundle(
     manifest = {
         "created_at": created,
         "collector_version": _version(),
+        "component_version": component_version,
         "host": platform.node(),
         "platform": platform.platform(),
         "python": sys.version.split()[0],
@@ -138,6 +145,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Log file to include (repeatable).",
     )
     parser.add_argument("--stats-url", default=None)
+    parser.add_argument(
+        "--component-version",
+        default=os.environ.get("GG_COMPONENT_VERSION", "unknown"),
+    )
     args = parser.parse_args(argv)
 
     output = args.output or Path(
@@ -149,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
             output_path=output,
             log_files=args.log_file,
             stats_url=args.stats_url,
+            component_version=args.component_version,
         )
     except OSError as exc:
         print(f"support bundle failed: {exc}", file=sys.stderr)

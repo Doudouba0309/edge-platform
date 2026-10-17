@@ -137,6 +137,7 @@ class SourcesConfig(BaseModel):
 
 class CollectorConfig(BaseModel):
     gateway_id: str = Field(default="dev-gateway-01", pattern=GATEWAY_ID_PATTERN)
+    component_version: str = "dev"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_json: bool = True
     log_file: str | None = None

@@ -13,6 +13,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
+from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
@@ -40,12 +41,17 @@ class StatusReporter:
         snapshot: SnapshotFn,
         interval_s: float = 30.0,
         enabled: bool = True,
+        component_version: str = "dev",
     ) -> None:
         self.gateway_id = gateway_id
         self.sink = sink
         self.snapshot = snapshot
         self.interval_s = interval_s
         self.enabled = enabled
+        self.component_version = component_version
+        self.sent = 0
+        self.failed = 0
+        self.last_error: str | None = None
         self._task: asyncio.Task[None] | None = None
         self._started_at: float | None = None
         self._started = False
@@ -77,6 +83,8 @@ class StatusReporter:
         if not self.sink.supports_status:
             return
         snapshot = self.snapshot()
+        now = utcnow()
+        stale_after_s = self.interval_s * 3
         sources = snapshot.get("sources", {})
         source_health: dict[str, Any] = {}
         if isinstance(sources, dict):
@@ -88,8 +96,12 @@ class StatusReporter:
             "gateway_id": self.gateway_id,
             "state": state,
             "event": event,
-            "ts": utcnow().isoformat(),
-            "version": collector_version(),
+            "ts": now.isoformat(),
+            "version": self.component_version,
+            "package_version": collector_version(),
+            "heartbeat_interval_s": self.interval_s,
+            "stale_after_s": stale_after_s,
+            "expires_at": (now + timedelta(seconds=stale_after_s)).isoformat(),
             "uptime_s": round(time.monotonic() - (self._started_at or time.monotonic()), 1),
             "ready": bool(snapshot.get("ready")),
             "spool_pending": snapshot.get("spool_pending", 0),
@@ -105,4 +117,9 @@ class StatusReporter:
                 json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8")
             )
         except Exception as exc:
+            self.failed += 1
+            self.last_error = str(exc)
             log.warning("status publish failed (%s): %s", event, exc)
+        else:
+            self.sent += 1
+            self.last_error = None

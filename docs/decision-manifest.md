@@ -1,7 +1,7 @@
 # Phase 1+ Decision Manifest
 
 - **Snapshot:** 18 October 2026
-- **Current live state:** component `1.0.7` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 141 tests pass.
+- **Current live state:** component `1.0.8` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 145 tests pass.
 - **Purpose:** list the decisions needed from the point-map contract onward, with a recommended default for each.
 
 ## How to use this
@@ -70,7 +70,7 @@ If not, reply with the decision IDs, for example: **“D1 JSON, D4 add uint32, D
 
 | ID | Decision | Options | Recommendation | Why / impact | Needed |
 |---|---|---|---|---|---|
-| D33 | Sandbox lifecycle | Keep live / tear down / keep until v1 | **Tear down after the 1.0.7 proof; recreate with scripts** | Avoids drift and unnecessary cost. | Must decide now |
+| D33 | Sandbox lifecycle | Keep live / tear down / keep until v1 | **Tear down after the 1.0.8 proof; recreate with scripts** | Avoids drift and unnecessary cost. | Must decide now |
 | D34 | Provisioning | Manual CLI / repeatable scripts | **Repeatable scripts with `--dry-run` and `--yes`** | The manual path took many corrections and is not safe to repeat from memory. | Before next AWS test |
 | D35 | Naming | Free / fixed convention | **`edge-platform-<env>-<thing>`; tag `project=edge-platform`, `environment=sandbox`** | Makes cleanup and cost tracking reliable. | Before next AWS test |
 | D36 | AWS architecture proof | arm64 only / both | **arm64 live proof; x86_64 image CI; add x86 core only if a client needs it** | Avoids paying for a second core without a requirement. | Before v1 |

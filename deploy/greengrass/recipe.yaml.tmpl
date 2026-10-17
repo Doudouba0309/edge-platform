@@ -52,6 +52,7 @@ Manifests:
           set -eu
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
+          component_version: "__COMPONENT_VERSION__"
           log_level: "{configuration:/logLevel}"
           log_json: true
           log_file: "{work:path}/collector.jsonl"
@@ -107,6 +108,7 @@ Manifests:
           set -eu
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
+          component_version: "__COMPONENT_VERSION__"
           log_level: "{configuration:/logLevel}"
           log_json: true
           log_file: "{work:path}/collector.jsonl"

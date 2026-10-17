@@ -29,7 +29,7 @@ REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.7"
+COMPONENT_VERSION = "1.0.8"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
@@ -191,3 +191,16 @@ def test_policy_has_no_mqtt_wildcards() -> None:
         for resource in resources:
             assert "+" not in resource
             assert "#" not in resource
+
+
+def test_component_requirements_are_pinned() -> None:
+    requirements = (ROOT / "deploy" / "greengrass" / "component-requirements.txt").read_text()
+    lines = [
+        line.strip()
+        for line in requirements.splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    assert lines
+    for line in lines:
+        assert "==" in line
+        assert ">=" not in line and "<" not in line and "~=" not in line

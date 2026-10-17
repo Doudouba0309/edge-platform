@@ -19,6 +19,9 @@ def test_redact_hides_passwords_and_private_keys() -> None:
     assert "abc123" not in cleaned
     assert "ZmFrZQ" not in cleaned
     assert "[REDACTED]" in cleaned
+    assert redact("Authorization: Bearer abc123") == "Authorization: [REDACTED]"
+    assert redact("Proxy-Authorization: Basic dXNlcjpwYXNz") == "Proxy-Authorization: [REDACTED]"
+    assert redact("api_key=abc123") == "api_key=[REDACTED]"
 
 
 def test_json_formatter_includes_context_and_redacts() -> None:
@@ -31,7 +34,7 @@ def test_json_formatter_includes_context_and_redacts() -> None:
         args=("temperature",),
         exc_info=None,
     )
-    token = set_log_context(gateway_id="gw-1", batch_seq=7)
+    token = set_log_context(gateway_id="gw-1", batch_seq=7, component_version="1.0.8")
     try:
         ContextFilter().filter(record)
         payload = json.loads(JsonFormatter().format(record))
@@ -40,6 +43,7 @@ def test_json_formatter_includes_context_and_redacts() -> None:
 
     assert payload["gateway_id"] == "gw-1"
     assert payload["batch_seq"] == 7
+    assert payload["component_version"] == "1.0.8"
     assert "hunter2" not in payload["message"]
     assert payload["level"] == "INFO"
 

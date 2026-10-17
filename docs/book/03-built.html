@@ -29,7 +29,7 @@
     <div class="tile"><h3>Delivery</h3><p>Base image, CI, SBOMs, offline nucleus, IPC sink, component package and AWS proof.</p></div>
   </div>
 
-  <h2>The 21-step build history</h2>
+  <h2>The first 21 build steps</h2>
   <table>
     <thead><tr><th>#</th><th>Commit</th><th>What it added</th><th>Why it mattered</th></tr></thead>
     <tbody>
@@ -57,6 +57,13 @@
     </tbody>
   </table>
 
+  <p class="small">
+    The table above is the first 21-step build history. Later steps added the
+    supportability layer, forced component reinstall, split status policies and
+    the 1.0.8 hardening; those are described in the review report and the latest
+    validation manual rather than rewritten into the historical table.
+  </p>
+
   <h2>What exists in the repository now</h2>
 
   <h3>The collector package</h3>
@@ -83,7 +90,7 @@
 
   <h3>The tests</h3>
   <p>
-    At the time of writing, <code>make check</code> runs <strong>141 tests</strong>.
+    At the time of writing, <code>make check</code> runs <strong>145 tests</strong>.
     They cover models, schema drift, identifiers, config, synthetic source,
     batching, queue overflow, spool ordering and budgets, sink failure/reconnect,
     health, app wiring and the AWS artifact contract.
@@ -126,14 +133,14 @@
     <li>Built the nucleus image with Python 3.12 and <code>venv</code>, because the component installs its own Python environment.</li>
     <li>Ran the core with the certificate, key, Amazon root CA and the correct data/credentials endpoints.</li>
     <li>Built the component ZIP with Linux wheels for arm64 and x86_64; uploaded it to S3.</li>
-    <li>Created component version 1.0.4 and deployed it to the thing.</li>
+    <li>Created the original component version 1.0.4 and deployed it.</li>
     <li>Subscribed with a read-only observer certificate and saw a real batch arrive.</li>
   </ol>
 
   <div class="callout ok">
     <strong>The observed proof.</strong>
     Component <code>io.github.doudouba0309.EdgePlatform.Collector</code> version
-    <code>1.0.4</code> was <code>RUNNING</code> on
+    <code>1.0.4</code> was the original proof; the current live component is <code>1.0.8</code> and is <code>RUNNING</code> on
     <code>edge-platform-sandbox-core</code>, and a schema-1.0 batch arrived on
     <code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code>.
   </div>

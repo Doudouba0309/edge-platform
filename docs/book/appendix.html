@@ -57,7 +57,7 @@
     <tbody>
       <tr><td><code>make install</code></td><td>Creates the virtual environment and installs dependencies.</td><td>uv</td></tr>
       <tr><td><code>make hooks</code></td><td>Installs the pre-commit secret hook.</td><td>pre-commit (installed by <code>make install</code>)</td></tr>
-      <tr><td><code>make check</code></td><td>Ruff, mypy, 141 tests and the secret guard.</td><td>Nothing else</td></tr>
+      <tr><td><code>make check</code></td><td>Ruff, mypy, 145 tests and the secret guard.</td><td>Nothing else</td></tr>
       <tr><td><code>make verify</code></td><td>Check plus local mTLS, outage, replay, RSS and SIGTERM.</td><td>Docker + Mosquitto clients</td></tr>
       <tr><td><code>make smoke</code></td><td>Builds and boots both Tier 1 collector images.</td><td>Docker</td></tr>
       <tr><td><code>PLATFORMS=linux/arm64 make smoke</code></td><td>Faster single-architecture image test.</td><td>Docker</td></tr>
@@ -87,7 +87,7 @@
       <tr><td>Role alias</td><td><code>edge-platform-sandbox-TESRoleAlias</code></td><td>Name the nucleus asks for credentials.</td></tr>
       <tr><td>Observer</td><td><code>edge-platform-sandbox-observer</code></td><td>Read-only MQTT observer for validation.</td></tr>
       <tr><td>Component</td><td><code>io.github.doudouba0309.EdgePlatform.Collector</code></td><td>Collector component.</td></tr>
-      <tr><td>Running version</td><td><code>1.0.7</code></td><td>Deployed and <code>RUNNING</code> at the time of writing; includes supportability.</td></tr>
+      <tr><td>Running version</td><td><code>1.0.8</code></td><td>Deployed and <code>RUNNING</code> at the time of writing; includes supportability.</td></tr>
       <tr><td>Topic</td><td><code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code></td><td>Observed telemetry.</td></tr>
       <tr><td>Bucket</td><td><code>edge-platform-sandbox-&lt;account-id&gt;-ap-southeast-1</code></td><td>Private component artifact storage.</td></tr>
       <tr><td>Local core</td><td><code>edge-platform-aws-core</code></td><td>Docker container running the nucleus.</td></tr>
@@ -148,11 +148,11 @@
     This handbook describes the repository as of <strong>17 October 2026</strong>,
     after the AWS sandbox proof. The code history at that point contained 21
     commits; the latest code commit before this book was
-    <code>5c24f98</code> (testing and validation runbook). The book itself is a
-    documentation change.
+    <code>f545e91</code> (deep review report), following the 1.0.8 fixes. The book
+    itself is a documentation change.
   </p>
   <p>
-    The AWS proof used component version <code>1.0.7</code>, region
+    The AWS proof used component version <code>1.0.8</code>, region
     <code>ap-southeast-1</code>, core architecture <code>aarch64</code> and the
     synthetic source. The x86_64 image was exercised locally, not deployed to AWS.
   </p>

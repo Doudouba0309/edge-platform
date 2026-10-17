@@ -32,6 +32,7 @@ def test_support_bundle_contains_redacted_evidence(tmp_path) -> None:
         config_path=config,
         output_path=output,
         log_files=[log],
+        component_version="1.0.8",
     )
 
     assert path == output
@@ -43,6 +44,7 @@ def test_support_bundle_contains_redacted_evidence(tmp_path) -> None:
         assert "logs/collector.log" in names
         manifest = json.loads(bundle.read("manifest.json"))
         assert manifest["config_path"] == str(config)
+        assert manifest["component_version"] == "1.0.8"
         assert "hunter2" not in bundle.read("logs/collector.log").decode()
         assert "ZmFrZQ" not in bundle.read("logs/collector.log").decode()
         assert "[REDACTED]" in bundle.read("logs/collector.log").decode()

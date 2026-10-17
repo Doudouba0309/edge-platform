@@ -34,21 +34,37 @@ _CONTEXT_FIELDS = (
     "event",
     "error_code",
     "service_version",
+    "component_version",
 )
 
 _PEM_RE = re.compile(
     r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?-----END [A-Z0-9 ]*PRIVATE KEY-----",
     re.DOTALL,
 )
+_HEADER_RE = re.compile(r"(?im)^(\s*(?:proxy-)?authorization\s*:\s*)([^\r\n]+)")
+_BEARER_RE = re.compile(r"(?i)\b(bearer)\s+[A-Za-z0-9._~+/=-]+")
+_JSON_SECRET_RE = re.compile(
+    r'(?i)("(?:password|secret|token|access[_-]?key|api[_-]?key|'
+    r'client[_-]?secret|authorization)"\s*:\s*")([^"]*)(")'
+)
 _SECRET_RE = re.compile(
     r"(?i)((?:password|passwd|secret|token|private[_-]?key|access[_-]?key|"
+    r"api[_-]?key|apikey|client[_-]?secret|aws[_-]?secret[_-]?access[_-]?key|"
     r"authorization)\s*[=:]\s*)([^\s,;]+)"
 )
 
 
 def redact(text: str) -> str:
-    """Remove obvious secrets from a log line or support bundle."""
+    """Remove obvious secrets from a log line or support bundle.
+
+    Headers are handled first because a Bearer token contains a space; a
+    key/value regex alone would redact only the word "Bearer" and leave the
+    token visible.
+    """
+    text = _HEADER_RE.sub(r"\1[REDACTED]", text)
+    text = _BEARER_RE.sub(r"\1 [REDACTED]", text)
     text = _PEM_RE.sub("[REDACTED PRIVATE KEY]", text)
+    text = _JSON_SECRET_RE.sub(r"\1[REDACTED]\3", text)
     return _SECRET_RE.sub(r"\1[REDACTED]", text)
 
 

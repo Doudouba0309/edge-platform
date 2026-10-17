@@ -16,6 +16,7 @@ Operational guides:
 - [Testing and Validation](docs/testing-validation.html)
 - [Edge Platform Handbook](docs/book/index.html)
 - [Phase 1+ Decision Manifest](docs/decision-manifest.md)
+- [Deep Review — 18 October 2026](docs/reviews/2026-10-18-deep-review.md)
 
 ## Local runtime
 
