@@ -39,8 +39,9 @@ make sbom-nucleus   # CycloneDX SBOMs for the nucleus images
 ```
 
 `make check` needs no Docker. The smoke targets expect Docker; `make verify`
-also needs the host Mosquitto clients. CI runs the gates on every push to `main`
-and on pull requests.
+also needs the host Mosquitto clients. CI runs the gates on code and image
+changes to `main` and on pull requests; documentation-only changes skip the
+pipeline. Image builds reuse a GitHub Actions buildx cache between runs.
 
 ## End-to-end smoke
 

@@ -12,6 +12,7 @@ GATEWAY_ID="dev-gateway-01"  # must match config/collector-container.yaml
 SMOKE_DIR="$ROOT/var/smoke-image"
 PLATFORMS="${PLATFORMS:-linux/arm64 linux/amd64}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
+CACHE_BACKEND="${CACHE_BACKEND:-}"
 RSS_LIMIT_KB=153600  # 150 MiB
 HOST_PORT=18081
 COLLECTOR=""
@@ -110,7 +111,13 @@ for platform in $PLATFORMS; do
   echo "=== ${platform} ==="
 
   if [ "$SKIP_BUILD" != "1" ]; then
-    docker buildx build --platform "$platform" --load -t "$image" . \
+    cache_args=()
+    if [ "$CACHE_BACKEND" = "gha" ]; then
+      cache_args+=(--cache-from "type=gha,scope=edge-platform-base-${arch}")
+      cache_args+=(--cache-to "type=gha,mode=max,scope=edge-platform-base-${arch}")
+    fi
+    docker buildx build --platform "$platform" --load \
+      ${cache_args[@]+"${cache_args[@]}"} -t "$image" . \
       || fail "image build failed for ${platform}"
   fi
   docker image inspect "$image" >/dev/null 2>&1 \

@@ -51,7 +51,8 @@ without an instruction. Report what you did, then stop.
 ## Platform scope
 
 **Tier 1 is arm64 and x86_64.** Both architectures are built and smoke-tested
-on every commit. A change verified on only one of them is not done.
+on every commit that changes code, images or configuration. Documentation-only
+commits may skip the pipeline. A change verified on only one of them is not done.
 
 **Tier 2 is armv7.** It is admitted only with a named deployment and its own CI
 job. No speculative armv7 work.
