@@ -7,13 +7,18 @@ requires-python = ">=3.12"
 license = { text = "Proprietary" }
 dependencies = [
     "pydantic>=2.9,<3",
+    "PyYAML>=6.0,<7",
 ]
 
 [project.optional-dependencies]
 dev = [
     "jsonschema>=4.23",
     "pytest>=8.2",
+    "pytest-asyncio>=1.0,<2",
 ]
+
+[project.scripts]
+edge-collector = "edge_collector.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -25,4 +30,5 @@ packages = ["src/edge_collector"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_mode = "auto"
 addopts = "-ra --strict-markers"

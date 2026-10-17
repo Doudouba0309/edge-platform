@@ -157,6 +157,5 @@ def test_status_topic_rejects_unsafe_gateway_ids(bad: str) -> None:
 
 def test_topic_allows_thing_name_safe_characters() -> None:
     assert (
-        telemetry_topic("GW_1:edge", "line-1.2")
-        == "edge/GW_1:edge/line-1.2/telemetry"
+        telemetry_topic("GW_1:edge", "line-1.2") == "edge/GW_1:edge/line-1.2/telemetry"
     )

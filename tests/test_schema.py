@@ -125,9 +125,7 @@ def test_batches_round_trip_through_the_declared_shape(make_batch) -> None:
 
 
 @pytest.mark.parametrize("bad_value", [{"nested": True}, [1, 2, 3], None])
-def test_schema_rejects_non_scalar_sample_values(
-    make_batch, bad_value: Any
-) -> None:
+def test_schema_rejects_non_scalar_sample_values(make_batch, bad_value: Any) -> None:
     schema = load_schema(SCHEMA_PATH)
     payload = json.loads(make_batch().to_json())
     payload["samples"][0]["value"] = bad_value
