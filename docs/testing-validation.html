@@ -109,7 +109,7 @@
     the image, the collector, and a real message in AWS.
   </p>
   <div class="meta">
-    <span>About 15–25 minutes</span>
+    <span>About 15–30 minutes</span>
     <span>No AWS changes</span>
     <span>Image build: 3–6 minutes</span>
   </div>
@@ -123,6 +123,7 @@
     <li><a href="#before">Before you start</a></li>
     <li><a href="#image">Part 1 — Test the image</a></li>
     <li><a href="#collector">Part 2 — Test the collector</a></li>
+    <li><a href="#supportability">Supportability checks</a></li>
     <li><a href="#aws">Part 3 — Test the data in AWS</a></li>
     <li><a href="#success">What success looks like</a></li>
     <li><a href="#trouble">If something fails</a></li>
@@ -141,6 +142,7 @@
     <li><code>make smoke</code> — the image builds, boots and publishes.</li>
     <li>Run the collector locally and see <code>ok</code> / <code>ready</code>.</li>
     <li>Open the AWS MQTT test client, subscribe to <code>edge/#</code>, and watch a reading arrive.</li>
+    <li>Optionally inspect the JSON logs, status heartbeat and support bundle.</li>
   </ol>
   <div class="flow">
     <div><b>1. Image</b>Boots and runs</div>
@@ -244,7 +246,7 @@
   <pre><code>make check</code></pre>
   <div class="expected">
     Ruff and mypy report no issues; all unit tests pass
-    (<code>134 passed</code> at the time of writing).
+    (<code>141 passed</code> at the time of writing).
   </div>
 
   <h3>2B. Run the collector locally</h3>
@@ -292,6 +294,72 @@ curl -s http://127.0.0.1:8081/stats</code></pre>
   </div>
 </section>
 
+
+<section id="supportability" class="step">
+  <div class="step-head">
+    <span class="num">2D</span>
+    <div>
+      <span class="kicker">Evidence for remote support</span>
+      <h2>Check logs, status and the support bundle</h2>
+    </div>
+  </div>
+  <p class="time">1–2 minutes, after `make smoke`.</p>
+
+  <p>
+    The live AWS component is still <strong>1.0.4</strong>, which predates the
+    supportability slice. These checks use the local image smoke and the 1.0.5
+    artifact; they do not change AWS.
+  </p>
+
+  <h3>2D-1. Confirm the shipped log is structured</h3>
+  <p>Pick the architecture you tested and inspect the first two lines:</p>
+  <pre><code>ls var/smoke-image
+
+head -2 var/smoke-image/arm64-collector.log</code></pre>
+  <p class="small">Use <code>amd64-collector.log</code> if you tested x86_64.</p>
+  <div class="expected">
+    JSON lines with <code>ts</code>, <code>level</code>, <code>logger</code>,
+    <code>message</code>, <code>gateway_id</code> and
+    <code>service_version</code>.
+  </div>
+
+  <h3>2D-2. Confirm online/offline status</h3>
+  <pre><code>grep '"state"' var/smoke-image/arm64.jsonl | head -2</code></pre>
+  <div class="expected">
+    One record with <code>"state": "online"</code> and one with
+    <code>"state": "offline"</code> on <code>edge/dev-gateway-01/status</code>.
+    The payload is JSON and includes <code>event</code>, <code>version</code>,
+    <code>ready</code>, <code>sources</code>, <code>sink</code> and
+    <code>spool_pending</code>.
+  </div>
+
+  <h3>2D-3. Build and inspect a support bundle</h3>
+  <pre><code>.venv/bin/edge-collector-support \
+  --config config/collector.yaml \
+  --log-file var/collector.log \
+  --output var/validation/support-bundle.zip
+
+unzip -l var/validation/support-bundle.zip</code></pre>
+  <div class="expected">
+    The ZIP contains <code>manifest.json</code>, <code>config.yaml</code>,
+    <code>system.json</code> and <code>logs/collector.log</code>.
+    It must not contain private keys, passwords or tokens.
+  </div>
+
+  <div class="callout">
+    <strong>Why this matters for a remote client.</strong>
+    These are the artefacts you can ask the client to send when something fails:
+    the log, the gateway state and a redacted configuration snapshot — without
+    needing a shell on the gateway.
+  </div>
+  <div class="callout warn">
+    <strong>Not yet in the live AWS component.</strong>
+    The 1.0.5 artifact adds status access to the Greengrass recipe, but it has not
+    been published or deployed. The live 1.0.4 proof still validates telemetry
+    only. Deploying 1.0.5 is a separate step.
+  </div>
+</section>
+
 <section id="aws" class="step">
   <div class="step-head">
     <span class="num">3</span>
@@ -322,7 +390,8 @@ aws greengrassv2 list-core-devices \
 
   <div class="expected">
     Component <code>io.github.doudouba0309.EdgePlatform.Collector</code><br>
-    Version <code>1.0.4</code> (or the current published version)<br>
+    Version <code>1.0.4</code> is the live proof; the 1.0.5 supportability
+    artifact is built locally but not deployed.<br>
     <code>lifecycleState: RUNNING</code>
   </div>
 
@@ -405,6 +474,8 @@ docker exec edge-platform-aws-core \
     <li>The AWS core is <code>HEALTHY</code>.</li>
     <li>The collector component is <code>RUNNING</code>.</li>
     <li>The MQTT test client shows a valid batch on <code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code>.</li>
+    <li>The image smoke shows JSON logs and an online/offline status pair.</li>
+    <li>The support bundle opens and contains no secret material.</li>
   </ul>
   <div class="callout">
     <strong>If the first four pass but AWS shows nothing,</strong>
@@ -428,6 +499,9 @@ docker exec edge-platform-aws-core \
       <tr><td>Component is not <code>RUNNING</code></td><td>Check the deployment and the component log. A failed deployment may have rolled back.</td></tr>
       <tr><td>No MQTT messages</td><td>Confirm the subscription is <code>edge/#</code>, the region is <code>ap-southeast-1</code>, and the component is running. Wait 15 seconds; batches are periodic.</td></tr>
       <tr><td>Messages are visible but malformed</td><td>Run <code>make check</code>; the schema contract tests catch most of this. Check the payload against the example in part 3C.</td></tr>
+      <tr><td>Logs are plain text, not JSON</td><td>Local <code>config/collector.yaml</code> is intentionally text. Inspect <code>var/smoke-image/*-collector.log</code> for the container's JSON logs.</td></tr>
+      <tr><td>No status records in the image smoke</td><td>Check <code>var/smoke-image/*.jsonl</code>; the live 1.0.4 AWS component predates the status feature, so use the local image evidence.</td></tr>
+      <tr><td>Support bundle command not found</td><td>Run <code>make install</code> after pulling this change, or use <code>.venv/bin/python -m edge_collector.support ...</code>.</td></tr>
     </tbody>
   </table>
 </section>
