@@ -40,7 +40,7 @@ Manifests:
           ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           python3 -m venv "{work:path}/venv"
           "{work:path}/venv/bin/pip" install \
-            --no-index --find-links "$ART/wheels" "edge-collector==__DIST_VERSION__"
+            --no-index --find-links "$ART/wheels" "edge-collector[aws]==__DIST_VERSION__"
       Run:
         Script: |
           set -eu
@@ -91,7 +91,7 @@ Manifests:
           ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           python3 -m venv "{work:path}/venv"
           "{work:path}/venv/bin/pip" install \
-            --no-index --find-links "$ART/wheels" "edge-collector==__DIST_VERSION__"
+            --no-index --find-links "$ART/wheels" "edge-collector[aws]==__DIST_VERSION__"
       Run:
         Script: |
           set -eu

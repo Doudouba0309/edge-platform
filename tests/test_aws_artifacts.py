@@ -143,7 +143,7 @@ def test_recipe_install_uses_the_universal_wheelhouse() -> None:
     script = recipe["Manifests"][0]["Lifecycle"]["Install"]["Script"]
     assert "python3 -m venv" in script
     assert "--no-index --find-links" in script
-    assert f"edge-collector=={_values()['DIST_VERSION']}" in script
+    assert f"edge-collector[aws]=={_values()['DIST_VERSION']}" in script
 
 
 def test_policy_has_no_mqtt_wildcards() -> None:
