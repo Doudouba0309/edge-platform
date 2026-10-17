@@ -186,6 +186,8 @@ Nothing else in this repository is destructive.
 The gates, all runnable:
 
 - `make check` — ruff format/check, `mypy --strict`, secret guard, unit tests.
+- `make component` — builds the Greengrass component artifact and rendered
+  recipe/policy into `build/component/` (network required for the wheelhouse).
 - `make verify` — `check` plus `scripts/smoke-local.sh`, the local mTLS and
   store-and-forward outage/replay check.
 - `make smoke` — `scripts/smoke-image.sh`, which builds and boots both Tier 1

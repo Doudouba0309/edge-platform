@@ -47,6 +47,20 @@ pipeline. Image builds reuse a GitHub Actions buildx cache between runs.
 workflow runs on every push and pull request, including documentation-only
 changes, because the main pipeline's path filter deliberately skips those.
 
+### Greengrass component
+
+`make component` builds the collector as a Greengrass V2 component:
+
+- a wheelhouse with Linux `arm64` and `x86_64` wheels, including the `aws`
+  extra (`awsiotsdk`);
+- a recipe with one explicit manifest per architecture and `NoContainer`
+  execution;
+- the rendered IoT policy template.
+
+Outputs land in `build/component/` and are intentionally git-ignored. The build
+needs `pip` and network access to populate the wheelhouse. See
+[`docs/component-packaging.md`](docs/component-packaging.md).
+
 ## End-to-end smoke
 
 `./scripts/smoke-local.sh` generates local test certificates, starts the

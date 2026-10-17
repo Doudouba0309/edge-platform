@@ -37,6 +37,27 @@ jobs:
       - name: Check
         run: make check
 
+  component:
+    name: Greengrass component packaging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: latest
+          enable-cache: true
+      - name: Build component
+        run: make component
+      - name: Upload component
+        uses: actions/upload-artifact@v4
+        with:
+          name: greengrass-component
+          path: |
+            build/component/EdgeCollector-*.zip
+            build/component/recipe.yaml
+            build/component/iot-policy.json
+
   smoke:
     name: Tier 1 smoke (arm64 + x86_64)
     runs-on: ubuntu-24.04

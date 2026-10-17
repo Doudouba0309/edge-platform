@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ConnectAsTheCoreThing",
+      "Effect": "Allow",
+      "Action": ["iot:Connect"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:client/__THING_NAME__"
+      ]
+    },
+    {
+      "Sid": "PublishTelemetryAndNucleusTopics",
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Receive"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topic/edge/*",
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topic/$aws/things/__THING_NAME__/*"
+      ]
+    },
+    {
+      "Sid": "SubscribeToNucleusTopics",
+      "Effect": "Allow",
+      "Action": ["iot:Subscribe"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topicfilter/edge/*",
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topicfilter/$aws/things/__THING_NAME__/*"
+      ]
+    }
+  ]
+}

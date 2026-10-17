@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: help install hooks format lint test check check-secrets verify smoke sbom sbom-nucleus nucleus-smoke
+.PHONY: help install hooks format lint test check check-secrets component verify smoke sbom sbom-nucleus nucleus-smoke
 
 help:
 	@printf '%s\n' \
@@ -16,6 +16,7 @@ help:
 		'test     unit tests' \
 		'hooks    install the pre-commit hook in .git/hooks' \
 		'check    lint + secret guard + test (no Docker required)' \
+		'component  build the Greengrass component artifact (network required)' \
 		'verify   check + local mTLS/spool smoke (Docker required)' \
 		'smoke    build the Tier 1 collector images and boot-smoke each (Docker required)' \
 		'sbom     generate CycloneDX SBOMs for the collector images (after make smoke)' \
@@ -40,6 +41,9 @@ test:
 
 check-secrets:
 	./scripts/check-secrets.sh
+
+component:
+	./scripts/build-component.sh
 
 check: lint test check-secrets
 

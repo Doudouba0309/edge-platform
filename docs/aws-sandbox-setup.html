@@ -658,10 +658,14 @@ Confirmed non-production: yes</code></pre>
   </div>
 
   <p>
-    The collector's Greengrass IPC sink is now implemented and unit-tested. It is
-    part of the same component, so it can ask the nucleus to publish to IoT Core.
-    It is not an AWS component, an IoT thing, or a separate deployment. Component
-    packaging is the next step.
+    The collector's Greengrass IPC sink is implemented and unit-tested. It is part
+    of the same component, so it can ask the nucleus to publish to IoT Core. It is
+    not an AWS component, an IoT thing, or a separate deployment.
+  </p>
+  <p>
+    The collector is now packaged with <code>make component</code>: a universal
+    Linux wheelhouse, a two-architecture recipe and the rendered IoT policy.
+    Publishing and deploying those artifacts is the remaining AWS step.
   </p>
 
   <h3>Resource map</h3>
@@ -673,16 +677,16 @@ Confirmed non-production: yes</code></pre>
       <tr><td>Test core thing + thing group</td><td>Provisioning script</td><td>Pending component build</td></tr>
       <tr><td>Device certificate + IoT policy</td><td>Provisioning script</td><td>Pending component build</td></tr>
       <tr><td>IAM role + role alias (TES)</td><td>Provisioning script</td><td>Pending component build</td></tr>
-      <tr><td>Collector component version</td><td>Recipe publish</td><td>Pending packaging of the sink</td></tr>
+      <tr><td>Collector component version</td><td>Recipe publish</td><td>Artifact built; publish pending</td></tr>
       <tr><td>Greengrass deployment</td><td>Deployment script</td><td>Pending component build</td></tr>
     </tbody>
   </table>
 
   <p>
     The Greengrass component is published from a recipe and artifact — it is not
-    created by clicking around the console. The provisioning and deployment steps
-    depend on that artifact, so the runnable Greengrass runbook will be added after
-    the collector component is packaged.
+    created by clicking around the console. The artifact and recipe now exist; the
+    runnable provisioning, publish and deploy runbook will be added with those
+    scripts.
   </p>
 
   <div class="callout">
