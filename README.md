@@ -13,6 +13,7 @@ Implementation decisions are recorded under [`docs/decisions/`](docs/decisions/)
 Operational guides:
 
 - [AWS Sandbox Setup](docs/aws-sandbox-setup.html)
+- [Testing and Validation](docs/testing-validation.html)
 
 ## Local runtime
 

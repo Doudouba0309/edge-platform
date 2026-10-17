@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test and Validate — Edge Platform</title>
+<style>
+  :root {
+    --ink: #16212b;
+    --muted: #5b6b7c;
+    --bg: #f4f7fa;
+    --card: #ffffff;
+    --line: #d8e0e8;
+    --accent: #0b6b7d;
+    --accent-soft: #e6f4f6;
+    --ok: #1f6b45;
+    --ok-soft: #eaf6f0;
+    --warn: #8a4b00;
+    --warn-soft: #fff7e6;
+    --danger: #9b2c2c;
+    --danger-soft: #fdecec;
+    --code: #0f1720;
+    --code-ink: #e8eef5;
+    --shadow: 0 12px 30px rgba(23, 33, 43, .07);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 100% 0%, #dff0f4 0, transparent 36rem),
+      var(--bg);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+  header.hero { padding: 50px 0 22px; }
+  .eyebrow { margin: 0 0 10px; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; color: var(--accent); }
+  h1 { margin: 0 0 12px; font-size: clamp(32px, 5vw, 48px); line-height: 1.1; letter-spacing: -.02em; }
+  .lede { max-width: 720px; margin: 0; font-size: 19px; color: #334556; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .meta span { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--muted); }
+  nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin: 8px 0 28px; }
+  nav.toc h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  nav.toc ul { margin: 0; padding-left: 0; list-style: none; columns: 2; column-gap: 40px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+  h2 { font-size: 26px; line-height: 1.25; letter-spacing: -.01em; }
+  h3 { font-size: 18px; margin: 24px 0 8px; }
+  section { margin: 0 0 26px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 28px; margin: 0 0 22px; }
+  .step-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
+  .step-head .num { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; font-size: 17px; border: 1px solid #bfe0e6; }
+  .step-head h2 { margin: 3px 0 0; }
+  .kicker { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 2px; }
+  .time { font-size: 13px; color: var(--muted); margin: 2px 0 14px 54px; }
+  pre { background: var(--code); color: var(--code-ink); border-radius: 10px; padding: 15px 17px; overflow-x: auto; line-height: 1.55; font-size: 13.5px; margin: 12px 0; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; background: #eef3f7; border: 1px solid #dbe5ed; border-radius: 5px; padding: 1px 5px; }
+  pre code { background: transparent; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-soft); }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+  .callout strong { display: block; margin-bottom: 3px; }
+  .expected { border: 1px solid #bfe0d0; background: var(--ok-soft); color: #174b33; padding: 11px 15px; border-radius: 10px; margin: 14px 0; font-size: 14.5px; }
+  .expected::before { content: "Expected · "; font-weight: 800; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { position: relative; padding-left: 30px; margin: 9px 0; }
+  .checklist li::before { content: ""; position: absolute; left: 0; top: 4px; width: 17px; height: 17px; border: 1.5px solid #9fb1c2; border-radius: 4px; background: #fff; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f1f6f9; font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+  .flow div { background: #fbfdff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; font-size: 14px; }
+  .flow b { display: block; color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+  .card { background: #fbfdff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card strong { display: block; margin-bottom: 3px; }
+  .card span { color: var(--muted); font-size: 14px; }
+  .small { font-size: 13.5px; color: var(--muted); }
+  .footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13.5px; }
+  .footer a { color: var(--muted); }
+  @media (max-width: 720px) {
+    nav.toc ul { columns: 1; }
+    .flow { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
+    .step { padding: 20px 18px; }
+    .time { margin-left: 50px; }
+  }
+  @media print {
+    body { background: #fff; }
+    nav.toc, .step { box-shadow: none; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Edge Platform · Operations guide</p>
+  <h1>Test and validate</h1>
+  <p class="lede">
+    A simple, copy-and-paste checklist for the three things that matter:
+    the image, the collector, and a real message in AWS.
+  </p>
+  <div class="meta">
+    <span>About 15–25 minutes</span>
+    <span>No AWS changes</span>
+    <span>Image build: 3–6 minutes</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ul>
+    <li><a href="#plain">The 30-second version</a></li>
+    <li><a href="#words">Words in plain English</a></li>
+    <li><a href="#before">Before you start</a></li>
+    <li><a href="#image">Part 1 — Test the image</a></li>
+    <li><a href="#collector">Part 2 — Test the collector</a></li>
+    <li><a href="#aws">Part 3 — Test the data in AWS</a></li>
+    <li><a href="#success">What success looks like</a></li>
+    <li><a href="#trouble">If something fails</a></li>
+    <li><a href="#safety">Safety notes</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<section id="plain">
+  <h2>The 30-second version</h2>
+  <p>If you only do five things, do these:</p>
+  <ol>
+    <li><code>make check</code> — the code is healthy.</li>
+    <li><code>make verify</code> — the collector works with real certificates and survives an outage.</li>
+    <li><code>make smoke</code> — the image builds, boots and publishes.</li>
+    <li>Run the collector locally and see <code>ok</code> / <code>ready</code>.</li>
+    <li>Open the AWS MQTT test client, subscribe to <code>edge/#</code>, and watch a reading arrive.</li>
+  </ol>
+  <div class="flow">
+    <div><b>1. Image</b>Boots and runs</div>
+    <div><b>2. Collector</b>Collects and packs</div>
+    <div><b>3. Nucleus</b>Sends securely</div>
+    <div><b>4. AWS</b>Receives data</div>
+  </div>
+  <div class="callout">
+    <strong>This guide is read-only in AWS.</strong>
+    It does not create, change or delete anything. It only builds locally, runs
+    local containers, lists AWS resources, and subscribes to a topic.
+  </div>
+</section>
+
+<section id="words">
+  <h2>Words in plain English</h2>
+  <table>
+    <thead><tr><th>Word</th><th>What it means here</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Image</strong></td><td>A prebuilt box containing the operating system, Python and the collector. It is what runs on the gateway.</td></tr>
+      <tr><td><strong>Collector</strong></td><td>The program that reads sensors, packs readings into batches, and hands them to the sender.</td></tr>
+      <tr><td><strong>Nucleus / Greengrass</strong></td><td>The local “postmaster”. It owns the gateway certificate, the secure AWS connection and the offline queue.</td></tr>
+      <tr><td><strong>Component</strong></td><td>An installable piece of software managed by the postmaster. Our collector is one component.</td></tr>
+      <tr><td><strong>IoT Core</strong></td><td>The AWS mailbox that receives the telemetry.</td></tr>
+      <tr><td><strong>Telemetry</strong></td><td>One parcel of readings, with a gateway id, device id, timestamp and values.</td></tr>
+      <tr><td><strong>Spool</strong></td><td>The local outbox. If the connection is down, batches wait there and are sent later.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="before">
+  <h2>Before you start</h2>
+  <div class="grid">
+    <div class="card"><strong>Terminal</strong><span>Open a terminal in the repository root.</span></div>
+    <div class="card"><strong>Docker</strong><span>Docker Desktop must be running for image and mTLS tests.</span></div>
+    <div class="card"><strong>AWS CLI</strong><span>Profile <code>edge-platform-admin</code>, region <code>ap-southeast-1</code>.</span></div>
+  </div>
+  <p>Prepare the local environment once:</p>
+  <pre><code>make install</code></pre>
+  <p>If Docker is not running, start Docker Desktop and wait for the whale icon to settle.</p>
+  <div class="callout warn">
+    <strong>Current sandbox only.</strong>
+    The AWS checks expect the test resources named below. If the sandbox was torn
+    down, set it up again first; this guide does not create resources.
+  </div>
+</section>
+
+<section id="image" class="step">
+  <div class="step-head">
+    <span class="num">1</span>
+    <div>
+      <span class="kicker">The image</span>
+      <h2>Build it, boot it, make it publish</h2>
+    </div>
+  </div>
+  <p class="time">3–6 minutes on the first run; faster afterwards.</p>
+
+  <p>
+    This test builds the actual gateway image, starts it, waits for readiness,
+    subscribes to the local broker, checks the telemetry schema, checks memory,
+    and stops the container cleanly.
+  </p>
+
+  <pre><code>make smoke</code></pre>
+
+  <p>On an Apple Silicon Mac, testing just one architecture is faster:</p>
+  <pre><code>PLATFORMS=linux/arm64 make smoke</code></pre>
+
+  <p>On an Intel machine, use:</p>
+  <pre><code>PLATFORMS=linux/amd64 make smoke</code></pre>
+
+  <div class="expected">
+    <code>PASS: arm64 boot, mutual TLS, schema, RSS, SIGTERM</code><br>
+    <code>PASS: linux/arm64</code><br>
+    The command exits with status 0.
+  </div>
+
+  <p>You can also confirm the image exists:</p>
+  <pre><code>docker image ls | grep edge-platform-base</code></pre>
+  <p class="small">You should see <code>edge-platform-base:arm64</code> and/or <code>edge-platform-base:amd64</code>.</p>
+
+  <div class="callout">
+    <strong>What this proves.</strong>
+    The image is not just “buildable”; it boots, starts the collector, publishes
+    valid telemetry over mutual TLS, stays under the memory limit, and shuts down
+    without hanging.
+  </div>
+</section>
+
+<section id="collector" class="step">
+  <div class="step-head">
+    <span class="num">2</span>
+    <div>
+      <span class="kicker">The collector</span>
+      <h2>Test the code, then run it by hand</h2>
+    </div>
+  </div>
+  <p class="time">1–2 minutes, plus a few seconds of running.</p>
+
+  <h3>2A. Fast code check</h3>
+  <pre><code>make check</code></pre>
+  <div class="expected">
+    Ruff and mypy report no issues; all unit tests pass
+    (<code>134 passed</code> at the time of writing).
+  </div>
+
+  <h3>2B. Run the collector locally</h3>
+  <p>
+    This uses a pretend sensor and the <code>log</code> sink, so nothing leaves
+    your machine. Leave it running and use a second terminal for the checks.
+  </p>
+  <pre><code>.venv/bin/edge-collector --config config/collector.yaml</code></pre>
+
+  <p>You should see lines like these:</p>
+  <pre><code>INFO edge_collector.sinks.log: log sink ready
+INFO edge_collector.health: health endpoint listening on http://127.0.0.1:8081/healthz
+INFO edge_collector.sinks.log: batch #1 device=plc-line-1 samples=2 bytes=526</code></pre>
+
+  <p>In a second terminal, ask the collector how it is doing:</p>
+  <pre><code>curl -s http://127.0.0.1:8081/healthz
+curl -s http://127.0.0.1:8081/readyz
+curl -s http://127.0.0.1:8081/stats</code></pre>
+
+  <div class="expected">
+    <code>healthz</code> → <code>ok</code><br>
+    <code>readyz</code> → <code>ready</code><br>
+    <code>/stats</code> → JSON with <code>"sink": {"name": "log", "healthy": true}</code>
+    and a non-zero <code>"batches_sent"</code>.
+  </div>
+
+  <p>Stop the collector with <kbd>Ctrl</kbd>+<kbd>C</kbd>. It should exit promptly.</p>
+
+  <h3>2C. Test the real transport</h3>
+  <p>
+    This starts a local broker that demands a client certificate, runs the
+    collector against it, breaks the connection, and confirms the spool replays.
+  </p>
+  <pre><code>make verify</code></pre>
+  <div class="expected">
+    <code>spooled while offline: … batch(es)</code><br>
+    <code>PASS: mutual TLS telemetry, schema, outage, replay, RSS … KB, SIGTERM</code>
+  </div>
+
+  <div class="callout">
+    <strong>What this proves.</strong>
+    The collector does not merely log: it authenticates with a certificate,
+    publishes valid batches, buffers during an outage, and drains the outbox in
+    order when the broker returns.
+  </div>
+</section>
+
+<section id="aws" class="step">
+  <div class="step-head">
+    <span class="num">3</span>
+    <div>
+      <span class="kicker">The data in AWS</span>
+      <h2>Confirm the gateway, the component and the message</h2>
+    </div>
+  </div>
+  <p class="time">2–3 minutes, plus about 10–15 seconds of waiting.</p>
+
+  <h3>3A. Is the test gateway alive?</h3>
+  <pre><code>aws sts get-caller-identity --profile edge-platform-admin
+
+aws greengrassv2 list-core-devices \
+  --region ap-southeast-1 \
+  --profile edge-platform-admin</code></pre>
+
+  <div class="expected">
+    Your account id and the <code>edge-platform-admin</code> identity.<br>
+    Core device <code>edge-platform-sandbox-core</code> has status <code>HEALTHY</code>.
+  </div>
+
+  <h3>3B. Is the collector installed and running?</h3>
+  <pre><code>aws greengrassv2 list-installed-components \
+  --core-device-thing-name edge-platform-sandbox-core \
+  --region ap-southeast-1 \
+  --profile edge-platform-admin</code></pre>
+
+  <div class="expected">
+    Component <code>io.github.doudouba0309.EdgePlatform.Collector</code><br>
+    Version <code>1.0.4</code> (or the current published version)<br>
+    <code>lifecycleState: RUNNING</code>
+  </div>
+
+  <h3>3C. See the message in AWS</h3>
+  <ol>
+    <li>Open the <a href="https://console.aws.amazon.com/iot/" target="_blank" rel="noreferrer">AWS IoT Core console</a> in region <strong>ap-southeast-1</strong>.</li>
+    <li>Go to <strong>Test</strong> → <strong>MQTT test client</strong>.</li>
+    <li>Under <strong>Subscribe to a topic</strong>, enter <code>edge/#</code>.</li>
+    <li>Choose <strong>Subscribe</strong>.</li>
+    <li>Wait 10–15 seconds.</li>
+  </ol>
+
+  <p>You should see a message on:</p>
+  <pre><code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code></pre>
+
+  <p>The payload should look like this:</p>
+  <pre><code>{
+  "schema_version": "1.0",
+  "gateway_id": "edge-platform-sandbox-core",
+  "device_id": "plc-line-1",
+  "seq": 20,
+  "samples": [
+    {
+      "device_id": "plc-line-1",
+      "metric": "temperature",
+      "value": 23.5,
+      "ts": "2026-10-17T12:57:51.928279+00:00",
+      "source": "sim",
+      "origin": "synthetic:temperature",
+      "unit": "degC",
+      "quality": "good",
+      "tags": {}
+    }
+  ]
+}</code></pre>
+
+  <div class="expected">
+    <code>schema_version</code> is <code>1.0</code>;<br>
+    <code>gateway_id</code> is <code>edge-platform-sandbox-core</code>;<br>
+    <code>device_id</code> is <code>plc-line-1</code>;<br>
+    at least one sample with <code>quality: "good"</code>.
+  </div>
+
+  <h3>3D. Optional — use the terminal instead of the console</h3>
+  <p>If the sandbox certificate files are present:</p>
+  <pre><code>source certs/sandbox/env.sh
+
+mosquitto_sub \
+  -h "$IOT_DATA_ENDPOINT" -p 8883 \
+  --cafile certs/sandbox/AmazonRootCA1.pem \
+  --cert certs/sandbox/observer.cert.pem \
+  --key certs/sandbox/observer.private.key \
+  -i edge-platform-sandbox-observer \
+  -t 'edge/#' -C 1 -W 60 -v</code></pre>
+  <p class="small">If the certs are missing, use the console test client. It needs no certificate.</p>
+
+  <h3>3E. Optional — look at the local core</h3>
+  <pre><code>docker ps | grep edge-platform-aws-core
+
+docker logs --tail 30 edge-platform-aws-core
+
+docker exec edge-platform-aws-core \
+  tail -40 /greengrass/v2/logs/io.github.doudouba0309.EdgePlatform.Collector.log</code></pre>
+  <p class="small">The component log should show the IPC sink ready and batches being published, with no repeating authorization errors.</p>
+
+  <div class="callout ok">
+    <strong>What this proves.</strong>
+    The data did not stop at a log file or a local broker. It went from the
+    collector, through the Greengrass nucleus and mutual TLS, into AWS IoT Core.
+  </div>
+</section>
+
+<section id="success">
+  <h2>What success looks like</h2>
+  <ul class="checklist">
+    <li><code>make check</code> passes.</li>
+    <li><code>make verify</code> prints a <code>PASS</code> line that mentions mutual TLS, outage and replay.</li>
+    <li><code>make smoke</code> prints <code>PASS</code> for the architecture you tested.</li>
+    <li>The local collector returns <code>ok</code> and <code>ready</code>, and its stats show a healthy sink.</li>
+    <li>The AWS core is <code>HEALTHY</code>.</li>
+    <li>The collector component is <code>RUNNING</code>.</li>
+    <li>The MQTT test client shows a valid batch on <code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code>.</li>
+  </ul>
+  <div class="callout">
+    <strong>If the first four pass but AWS shows nothing,</strong>
+    the problem is in the AWS path (core, component, policy or subscription),
+    not in the collector code. Check part 3A and 3B before changing code.
+  </div>
+</section>
+
+<section id="trouble">
+  <h2>If something fails</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>What to check</th></tr></thead>
+    <tbody>
+      <tr><td><code>Cannot connect to the Docker daemon</code></td><td>Start Docker Desktop and wait until it is ready.</td></tr>
+      <tr><td><code>mosquitto_pub: command not found</code></td><td>Install the Mosquitto clients: <code>brew install mosquitto</code>.</td></tr>
+      <tr><td><code>make smoke</code> takes a long time</td><td>The first build downloads the base image and builds two architectures. Use <code>PLATFORMS=linux/arm64 make smoke</code> for a shorter run.</td></tr>
+      <tr><td>Local collector exits immediately</td><td>Run <code>make install</code>, then check the log for a config error. The default config is <code>config/collector.yaml</code>.</td></tr>
+      <tr><td><code>/readyz</code> returns 503</td><td>The synthetic source is not connected yet. Wait a second and retry; check the collector log.</td></tr>
+      <tr><td><code>AccessDenied</code> or <code>ExpiredToken</code> from AWS</td><td>Confirm <code>aws sts get-caller-identity --profile edge-platform-admin</code> works and the region is <code>ap-southeast-1</code>.</td></tr>
+      <tr><td>Core is not <code>HEALTHY</code></td><td>Check <code>docker ps</code> and <code>docker logs edge-platform-aws-core</code>. The core may have been stopped or the sandbox torn down.</td></tr>
+      <tr><td>Component is not <code>RUNNING</code></td><td>Check the deployment and the component log. A failed deployment may have rolled back.</td></tr>
+      <tr><td>No MQTT messages</td><td>Confirm the subscription is <code>edge/#</code>, the region is <code>ap-southeast-1</code>, and the component is running. Wait 15 seconds; batches are periodic.</td></tr>
+      <tr><td>Messages are visible but malformed</td><td>Run <code>make check</code>; the schema contract tests catch most of this. Check the payload against the example in part 3C.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="safety">
+  <h2>Safety notes</h2>
+  <div class="callout danger">
+    <strong>Do not use root AWS credentials.</strong>
+    Use the named <code>edge-platform-admin</code> profile. Never paste access keys
+    or certificate private keys into chat, a document or a ticket.
+  </div>
+  <div class="callout warn">
+    <strong>This guide does not tear anything down.</strong>
+    The test core, certificates, role and component versions are still live in
+    the sandbox. Teardown is a separate, destructive action and needs explicit
+    confirmation.
+  </div>
+  <p class="small">
+    Current test names: core <code>edge-platform-sandbox-core</code>, component
+    <code>io.github.doudouba0309.EdgePlatform.Collector</code>, topic prefix
+    <code>edge/edge-platform-sandbox-core/</code>.
+  </p>
+</section>
+
+<section class="footer">
+  <p>
+    <strong>Edge Platform · test and validate.</strong>
+    Three checkpoints: image, collector, data. If all three pass, the whole path
+    is working.
+  </p>
+  <p class="small">
+    Repository commands: <code>make check</code>, <code>make verify</code>,
+    <code>make smoke</code>. AWS profile: <code>edge-platform-admin</code>.
+  </p>
+</section>
+
+</main>
+</div>
+</body>
+</html>
