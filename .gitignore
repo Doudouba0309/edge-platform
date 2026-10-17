@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+.venv/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Secrets and certificates
+certs/
+.env
+*.pem
+*.key
+secrets/
+
+# Build output
+*.zip
+greengrass-build/
+
+# Runtime state
+var/
+*.sqlite3*
+
+# macOS
+.DS_Store
