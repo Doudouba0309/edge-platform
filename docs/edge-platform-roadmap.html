@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge Platform — Implementation Roadmap and Operating Model</title>
+<style>
+  :root {
+    --ink: #16202b;
+    --ink-soft: #4a5b6b;
+    --line: #d8e0e8;
+    --line-soft: #eaeff4;
+    --bg: #ffffff;
+    --bg-soft: #f6f9fc;
+    --accent: #0b6b7d;
+    --accent-soft: #e6f4f6;
+    --warn: #8a5a00;
+    --warn-soft: #fdf4e3;
+    --risk: #8f2f2f;
+    --risk-soft: #fcefee;
+    --ok: #1f6b45;
+    --ok-soft: #eaf6f0;
+    --decide: #4a3d8f;
+    --decide-soft: #f0eefb;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    padding: 0 20px 80px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  header.masthead {
+    padding: 46px 0 28px;
+    border-bottom: 3px solid var(--ink);
+    margin-bottom: 34px;
+  }
+  .kicker {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h1 { margin: 0 0 14px; font-size: 38px; line-height: 1.14; letter-spacing: -.02em; }
+  .lede { margin: 0 0 18px; font-size: 19px; line-height: 1.5; color: var(--ink-soft); max-width: 74ch; }
+  .meta {
+    display: inline-block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid #bfe0e6;
+    border-radius: 999px;
+    padding: 6px 14px;
+  }
+
+  h2 {
+    margin: 54px 0 16px;
+    font-size: 25px;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+    counter-increment: sec;
+  }
+  h2::before {
+    content: counter(sec);
+    display: inline-block;
+    min-width: 30px;
+    margin-right: 10px;
+    padding: 1px 0 2px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 6px;
+    vertical-align: 3px;
+  }
+  body { counter-reset: sec; }
+  h3 { margin: 30px 0 10px; font-size: 18px; }
+  h4 { margin: 22px 0 8px; font-size: 15px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 24px; }
+  li { margin: 0 0 7px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  pre {
+    margin: 0 0 18px;
+    padding: 15px 17px;
+    overflow-x: auto;
+    background: #101a24;
+    color: #dbe6f0;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .cmt { color: #7f96ab; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 14.5px; }
+  caption { caption-side: top; text-align: left; font-size: 13px; color: var(--ink-soft); padding: 0 0 8px; }
+  th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  thead th {
+    background: var(--bg-soft);
+    border-bottom: 2px solid var(--line);
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-soft);
+  }
+  tbody tr:nth-child(even) { background: #fcfdfe; }
+  td code { white-space: nowrap; }
+
+  .box { margin: 0 0 22px; padding: 16px 18px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg-soft); }
+  .box > :last-child { margin-bottom: 0; }
+  .box h4 { margin-top: 0; }
+  .box.key { background: var(--accent-soft); border-color: #bfe0e6; }
+  .box.key h4 { color: var(--accent); }
+  .box.risk { background: var(--risk-soft); border-color: #eccfcd; }
+  .box.risk h4 { color: var(--risk); }
+  .box.decide { background: var(--decide-soft); border-color: #d6d0f0; }
+  .box.decide h4 { color: var(--decide); }
+  .box.ok { background: var(--ok-soft); border-color: #c8e6d8; }
+  .box.ok h4 { color: var(--ok); }
+  .box.warn { background: var(--warn-soft); border-color: #ecd9b0; }
+  .box.warn h4 { color: var(--warn); }
+
+  /* phase cards */
+  .phase {
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--accent);
+    border-radius: 8px;
+    padding: 18px 20px 6px;
+    margin: 0 0 20px;
+    background: #fdfefe;
+  }
+  .phase.done { border-left-color: var(--ok); }
+  .phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .phase-num {
+    font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #fff; background: var(--accent); border-radius: 5px; padding: 3px 9px;
+  }
+  .phase.done .phase-num { background: var(--ok); }
+  .phase-title { font-size: 18px; font-weight: 700; }
+  .phase-size { margin-left: auto; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+  .phase .aim { color: var(--ink-soft); font-size: 15px; margin: 6px 0 12px; }
+  .phase ol { margin-bottom: 12px; }
+  .phase .exit {
+    margin: 0 0 14px; padding: 11px 14px; border-radius: 7px;
+    background: var(--ok-soft); border: 1px solid #c8e6d8; font-size: 14px;
+  }
+  .phase .exit b { color: var(--ok); }
+
+  .pipeline { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; counter-reset: step; }
+  .pipeline li {
+    flex: 1 1 140px; margin: 0; padding: 12px 13px 12px 40px; position: relative;
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13.5px; line-height: 1.4;
+  }
+  .pipeline li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 12px; top: 12px; width: 19px; height: 19px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 700;
+    text-align: center; line-height: 19px;
+  }
+  .pipeline li b { display: block; font-size: 13.5px; }
+  .pipeline li span { color: var(--ink-soft); }
+  .pipeline li.gate { background: var(--decide-soft); border-color: #d6d0f0; }
+  .pipeline li.gate::before { background: var(--decide); }
+
+  .tag {
+    display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 999px; vertical-align: 1px;
+  }
+  .tag.now { background: var(--ok-soft); color: var(--ok); border: 1px solid #c8e6d8; }
+  .tag.next { background: var(--accent-soft); color: var(--accent); border: 1px solid #bfe0e6; }
+  .tag.later { background: var(--decide-soft); color: var(--decide); border: 1px solid #d6d0f0; }
+  .tag.never { background: var(--risk-soft); color: var(--risk); border: 1px solid #eccfcd; }
+
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink-soft); }
+
+  @media print {
+    body { padding: 0; font-size: 11.5pt; }
+    h2 { page-break-after: avoid; }
+    table, .box, .phase, pre { page-break-inside: avoid; }
+    pre { background: #f2f5f8; color: #16202b; border: 1px solid var(--line); }
+    .cmt { color: #6b7c8c; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="kicker">Implementation roadmap · companion to the proposal</p>
+  <h1>From Design to Deliveries</h1>
+  <p class="lede">
+    How the <em>One Base, Many Protocols</em> design gets built, what exists when it is finished,
+    and how a specific site is delivered afterwards — mostly by agents, with humans at the gates
+    that matter.
+  </p>
+  <div class="meta">Tier 1: arm64 + x86_64 &middot; CI builds and smoke-tests every commit</div>
+</header>
+
+<div class="box key">
+  <h4>The end state in one sentence</h4>
+  <p>
+    A pinned base image on two architectures, a declarative engine that covers the common protocols
+    by configuration, a conformance suite that makes an adapter's correctness checkable rather than
+    arguable, and an agent harness that turns a register document into a reviewed, deployed,
+    field-ready gateway — without a new image and without anyone guessing a register map.
+  </p>
+</div>
+
+<h2>Part 1 — High-level steps</h2>
+
+<p>
+  Five phases. Each one ends in something demonstrable, and the exit test is named so "done" is not
+  a matter of opinion. Sizes are relative effort, not a schedule.
+</p>
+
+<div class="phase done">
+  <div class="phase-head">
+    <span class="phase-num">Phase 0</span>
+    <span class="phase-title">Base image and the two-architecture pipeline</span>
+    <span class="phase-size">largest single phase · partly built already</span>
+  </div>
+  <p class="aim">
+    Make one boring, reproducible image that both Tier 1 architectures build, boot and prove
+    themselves on every commit. Everything later rides on this being trustworthy.
+  </p>
+  <ol>
+    <li><strong>Freeze the northbound contract.</strong> Canonical <code>Sample</code>/<code>Batch</code>,
+        published as JSON Schema with a test that fails on drift. <span class="tag now">exists</span></li>
+    <li><strong>Define the base image.</strong> Runtime, Greengrass nucleus, provisioning, hardened
+        defaults. Pin the base by digest; generate an SBOM on every build.</li>
+    <li><strong>Build both architectures.</strong> <code>arm64</code> and <code>x86_64</code> via
+        buildx; the non-native one under emulation. A failure in either blocks the change.</li>
+    <li><strong>Define the smoke test precisely</strong> — boot; collector reaches ready with a
+        synthetic source; <code>/healthz</code> returns 200; one batch published over
+        <em>mutually authenticated TLS</em> to a local broker on the production topic; clean
+        <code>SIGTERM</code>; measured memory inside the ceiling.
+        <span class="tag now">the mTLS harness exists</span></li>
+    <li><strong>Ship the base component set</strong> as Greengrass components: northbound publisher,
+        spool, health, config loader. <span class="tag now">exists as one process</span></li>
+    <li><strong>Make generation deterministic.</strong> Locked dependencies, sorted manifests, digest
+        references only — so "regenerate and diff" is a valid review technique.</li>
+  </ol>
+  <p class="exit"><b>Exit test:</b> a green pipeline that boots both architectures and moves one
+    schema-valid batch over mutual TLS, on every commit.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <span class="phase-num">Phase 1</span>
+    <span class="phase-title">The declarative engine</span>
+    <span class="phase-size">medium · highest leverage</span>
+  </div>
+  <p class="aim">
+    Cover the common protocols with configuration instead of code. This is the phase that decides
+    how much agent work is code generation versus filling in a form — and the answer should be
+    "almost none".
+  </p>
+  <ol>
+    <li><strong>Define the point-map schema.</strong> One versioned document per source: connection,
+        points, metric name, type, scaling, unit, deadband. The existing OPC UA node list is the
+        seed. <span class="tag now">partial</span></li>
+    <li><strong>Build the engine.</strong> Point map in, protocol client driven, <code>Sample</code>s
+        out. One code path, so batching, spooling and publishing are never re-implemented per protocol.</li>
+    <li><strong>Protocol 1 — Modbus TCP.</strong> Registers, coils, data types, word and byte order,
+        scaling. This one carries the most real sites.</li>
+    <li><strong>Protocol 2 — OPC UA.</strong> Generalise the existing source onto the engine.
+        <span class="tag now">partial</span></li>
+    <li><strong>Add validation, not just parsing.</strong> A command that checks a point map against
+        the device's declared shape and fails loudly before deployment — an out-of-range register or an
+        unknown metric should never reach a gateway.</li>
+    <li><strong>Test from fixtures, never from hardware.</strong> Golden inputs and expected canonical
+        output, checked in.</li>
+  </ol>
+  <p class="exit"><b>Exit test:</b> a real site mapped by configuration alone — no new code, no new
+    image, no developer involved.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <span class="phase-num">Phase 2</span>
+    <span class="phase-title">The adapter kit and the conformance suite</span>
+    <span class="phase-size">medium · the trust boundary</span>
+  </div>
+  <p class="aim">
+    Make "is this adapter correct?" a question a suite answers. Without this, generated adapters are
+    unverifiable, and an unverifiable adapter on a plant floor is worse than none.
+  </p>
+  <ol>
+    <li><strong>Publish the source contract.</strong> A small, documented, versioned interface:
+        normalise into <code>Sample</code>, own your own reconnection, never block.
+        <span class="tag now">exists as an ABC</span></li>
+    <li><strong>Surrogate tooling.</strong> Generate a simulator from a point map, or replay a captured
+        trace as a fixture. The surrogate is a required deliverable, not a convenience.</li>
+    <li><strong>Fix the fixture format.</strong> Known input, expected canonical output, and the
+        reason it is expected to look like that.</li>
+    <li><strong>Build the conformance suite:</strong> schema conformance; scaling round-trip;
+        word and byte order against a golden fixture; signedness and bounds; timestamp sanity;
+        quality propagation; kill-the-surrogate and prove no loss; resource ceiling on the smallest
+        target; determinism.</li>
+    <li><strong>Produce a conformance report</strong> as a machine-readable artifact, attached to every
+        change. A human reads the report, not the code.</li>
+    <li><strong>Prove the kit</strong> by adding a third protocol as a code adapter and passing the
+        whole suite.</li>
+  </ol>
+  <p class="exit"><b>Exit test:</b> a code adapter for a genuinely custom protocol passes the full
+    suite, and the report is attached to the change.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <span class="phase-num">Phase 3</span>
+    <span class="phase-title">The agent factory</span>
+    <span class="phase-size">medium · where the speed comes from</span>
+  </div>
+  <p class="aim">
+    Turn the repeatable part of delivery over to agents, with structure that makes wrong output
+    detectable rather than merely unlikely.
+  </p>
+  <ol>
+    <li><strong>Write skills as procedures, each ending in a verification command.</strong> A skill
+        without one is a liability. Version skills in the repository and contract-test them like code.</li>
+    <li><strong>Define the context layers</strong> and the rule for loading them: invariant (the
+        contract) → reusable (adapter kit, protocol playbooks) → site (register map, captures) →
+        this task. Never inject the whole repository.</li>
+    <li><strong>Store memory as data, not prose.</strong> Site facts with an owner, an expiry and the
+        evidence that produced them. Technique lives in skills. Credentials never live here at all.</li>
+    <li><strong>Define subagents by artifact contract:</strong> input, output artifact, verification
+        command, and the condition under which they must <em>refuse</em>. "No capture and no simulator"
+        must produce a refusal, not an invented register map.</li>
+    <li><strong>Expose the new operations to agents</strong> over the existing MCP surface: validate a
+        point map, build a surrogate, run conformance, open a change.</li>
+    <li><strong>Record provenance.</strong> Every published artifact names the base digest, the skill
+        versions and the run that produced it — without which a generated deployment cannot be audited
+        or rebuilt.</li>
+  </ol>
+  <p class="exit"><b>Exit test:</b> one deployment delivered end to end by an agent, reviewed and
+    merged by a human, with a conformance report and a resource budget.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <span class="phase-num">Phase 4</span>
+    <span class="phase-title">Fleet operations</span>
+    <span class="phase-size">ongoing</span>
+  </div>
+  <p class="aim">
+    The phase that decides whether the platform survives year two: patching, rollout and knowing
+    which sites run what.
+  </p>
+  <ol>
+    <li><strong>Rollout and rollback policy.</strong> Roll back on failure, cap the rollout rate, abort
+        automatically past a failure threshold. <span class="tag now">in the deploy script</span></li>
+    <li><strong>Patch cadence.</strong> One base-image rebuild propagates an OS or runtime fix
+        fleet-wide as a component update; only hardware and firmware force a new image.</li>
+    <li><strong>A provenance ledger</strong> with the one query that matters: which sites run which
+        digest, and which skills produced their adapters.</li>
+    <li><strong>Field signals.</strong> Decide which indicators mean "this adapter is wrong" —
+        a metric that stopped arriving, a quality that never leaves <code>bad</code>, a value pinned at
+        a bound, a reconnect rate that keeps climbing.</li>
+  </ol>
+  <p class="exit"><b>Exit test:</b> one base-image security fix shipped to the whole fleet through a
+    single rebuild and one deployment.</p>
+</div>
+
+<h2>Part 2 — What exists when it is finished</h2>
+
+<table>
+  <caption>The end state, as an inventory you could point at</caption>
+  <thead><tr><th style="width:28%">Asset</th><th>What it is, and what it buys you</th></tr></thead>
+  <tbody>
+    <tr><td><strong>One base image</strong></td><td>Two architectures, digest-pinned, SBOM'd, smoke-tested per commit. Hardware and firmware differences are the only reason a second image exists.</td></tr>
+    <tr><td><strong>Base component set</strong></td><td>Northbound publisher, spool, health, config loader, adapter engine. Shared by every site, so one fix reaches all of them.</td></tr>
+    <tr><td><strong>Declarative engine + point-map schema</strong></td><td>Common protocols covered by a versioned document that a controls engineer can read and review.</td></tr>
+    <tr><td><strong>Adapter kit</strong></td><td>A documented, versioned extension point for protocols that genuinely need code.</td></tr>
+    <tr><td><strong>Conformance suite + fixtures</strong></td><td>The difference between "we think it is right" and "the suite says it is right".</td></tr>
+    <tr><td><strong>Surrogate tooling</strong></td><td>Simulators generated from point maps, and replay of captured traffic — so verification needs no plant access.</td></tr>
+    <tr><td><strong>Skills, memory, subagent contracts</strong></td><td>Delivery knowledge that accumulates instead of living in one engineer's head.</td></tr>
+    <tr><td><strong>MCP surface</strong></td><td>Agents drive the pipeline directly — validate, build a surrogate, conform, propose — instead of shelling out and parsing prose.</td></tr>
+    <tr><td><strong>Provenance ledger</strong></td><td>Answers "what is running where, and what produced it" without archaeology.</td></tr>
+    <tr><td><strong>Operating documents</strong></td><td>Runbook, playbook, safety policy and the review gates, written for humans and agents alike.</td></tr>
+  </tbody>
+</table>
+
+<h3>What a new site actually consists of</h3>
+
+<table>
+  <thead><tr><th style="width:50%">You produce</th><th>You do <em>not</em> produce</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>
+        <ul style="margin-bottom:0">
+          <li>A point map (or a small adapter, for a genuinely custom protocol)</li>
+          <li>A fixture, and a surrogate to test against</li>
+          <li>A conformance report</li>
+          <li>A resource budget</li>
+          <li>A deployment to that site's thing group</li>
+        </ul>
+      </td>
+      <td>
+        <ul style="margin-bottom:0">
+          <li>A new image</li>
+          <li>A fork of the northbound code</li>
+          <li>A second copy of batching, spooling or retry</li>
+          <li>A hand-edited register map nobody can source</li>
+          <li>A bespoke deploy script</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Part 3 — Delivering a specific site, afterwards</h2>
+
+<h3>The pipeline, once it is running</h3>
+
+<ol class="pipeline">
+  <li><b>Intake</b><span>Site, hardware, protocol, tag list, plus the register document or a capture.</span></li>
+  <li><b>Decide</b><span>Does a declarative map cover it? Prefer yes; escalate to code only if not.</span></li>
+  <li><b>Surrogate</b><span>Build a simulator from the map, or replay the capture.</span></li>
+  <li><b>Conform</b><span>Run the suite. Produce the report. Refuse on any failure.</span></li>
+  <li><b>Propose</b><span>Open a change: adapter, fixture, report, budget. Regenerate and diff.</span></li>
+  <li class="gate"><b>Review</b><span>Human reads the diff, the report and the numbers. Merges.</span></li>
+  <li><b>Build</b><span>CI: both architectures, SBOM, smoke test, publish by digest.</span></li>
+  <li><b>Roll out</b><span>Deployment to the site's thing group, watching for rollback.</span></li>
+  <li class="gate"><b>Operate</b><span>Writes to a PLC need a signature. Telemetry may be autonomous.</span></li>
+</ol>
+
+<h3>Three worked examples, to show where the effort actually goes</h3>
+
+<table>
+  <thead><tr><th style="width:24%">Situation</th><th style="width:38%">What the agent does</th><th>What the human does</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>A Modbus TCP site</strong><br><span class="tag now">config only</span></td>
+      <td>Reads the register document, drafts a point map, generates a simulator from it, runs conformance, opens a change with the report.</td>
+      <td>Checks the point map against the vendor document and the conformance report. Merges. Nobody writes code, and no image changes.</td>
+    </tr>
+    <tr>
+      <td><strong>A vendor serial protocol</strong><br><span class="tag next">code adapter</span></td>
+      <td>Works from the protocol document plus a capture, implements the adapter against the kit, builds a surrogate, runs the suite until it passes.</td>
+      <td>Reviews the adapter and the report, and confirms the capture came from the real device. The suite is what makes this review tractable.</td>
+    </tr>
+    <tr>
+      <td><strong>An x86_64 site with a different NIC</strong><br><span class="tag later">new image variant</span></td>
+      <td>Adds the driver or kernel module to the base definition and lets CI build both architectures as usual.</td>
+      <td>Approves the base change, because it affects every site — the one case where the image legitimately moves.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Day two: what a fix looks like</h3>
+
+<table>
+  <thead><tr><th style="width:26%">Something changes</th><th style="width:24%">What moves</th><th>How a specific site is affected</th></tr></thead>
+  <tbody>
+    <tr><td>OS, runtime or TLS library</td><td>Base image digest</td><td>Every site, through one rebuild and a fleet rollout. This is the row that makes the component split worth it.</td></tr>
+    <tr><td>Northbound, spool or engine</td><td>Base component version</td><td>Every site, as a deployment. No image work, no re-verification of adapters.</td></tr>
+    <tr><td>One protocol adapter</td><td>Adapter component version</td><td>Only the sites that use it, independently reversible.</td></tr>
+    <tr><td>A register, tag or threshold</td><td>Configuration</td><td>One site, in seconds, invisible to everyone else.</td></tr>
+  </tbody>
+</table>
+
+<h3>What the agent may never do</h3>
+
+<div class="box risk">
+  <h4>Hard limits, regardless of confidence</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>Invent a register map.</strong> A mapping originates from a vendor document, a captured
+        trace, or a human engineer. A model can produce a completely plausible map that is wrong in one
+        field, and nothing downstream will complain — the numbers look fine.</li>
+    <li><strong>Write to a PLC.</strong> Setpoints, commands and mode changes need a human decision.
+        Reading telemetry can be autonomous; changing the process cannot.</li>
+    <li><strong>Touch credentials.</strong> Provisioning uses short-lived identities and fleet
+        provisioning. An agent never handles a long-lived private key, and no key is baked into an image.</li>
+    <li><strong>Ship without a surrogate and a passing report.</strong> No exceptions, including for
+        "obvious" protocols.</li>
+    <li><strong>Publish a component version twice.</strong> Versions are immutable; the fix is always a
+        new version.</li>
+  </ul>
+</div>
+
+<h3>How the platform gets better with use</h3>
+
+<table>
+  <thead><tr><th style="width:26%">Over time</th><th>What accumulates</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Fixtures</strong></td><td>Every deployment adds real-world inputs and their expected output, so regressions get caught for free on the next change.</td></tr>
+    <tr><td><strong>Surrogates</strong></td><td>A simulator per device family means the next site of the same kind is verified before anyone visits it.</td></tr>
+    <tr><td><strong>Memory</strong></td><td>Device quirks, register oddities and wiring surprises recorded once, with evidence, and reused by the next deployment.</td></tr>
+    <tr><td><strong>Skills</strong></td><td>Procedures harden as they are exercised. Anything without a verification command gets deleted rather than trusted.</td></tr>
+    <tr><td><strong>Declarative coverage</strong></td><td>Each new protocol that moves from code to a point map shrinks the audit surface for every future site.</td></tr>
+  </tbody>
+</table>
+
+<h2>Where this starts from today</h2>
+
+<p>
+  Phase 0 is not a blank page. Honest status of what already exists in this repository versus what
+  the roadmap still needs:
+</p>
+
+<table>
+  <thead><tr><th style="width:34%">Element</th><th style="width:14%">Status</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Frozen northbound contract</td><td><span class="tag now">built</span></td><td>Canonical samples and batches, published JSON Schema, drift test.</td></tr>
+    <tr><td>Store-and-forward</td><td><span class="tag now">built</span></td><td>Verified through a live broker outage with no data loss.</td></tr>
+    <tr><td>Mutual-TLS smoke test</td><td><span class="tag now">built</span></td><td>Runs the real sink against a certificate-requiring broker.</td></tr>
+    <tr><td>Open southbound seam</td><td><span class="tag now">built</span></td><td>A source interface and factory — the seed of the adapter kit.</td></tr>
+    <tr><td>Agent harness</td><td><span class="tag now">built</span></td><td>Operating manual, JSON control surface, MCP tools, task playbook.</td></tr>
+    <tr><td>Greengrass delivery</td><td><span class="tag now">partial</span></td><td>Nucleus runs locally two ways; publish and deploy scripts are written but have never run against a real account.</td></tr>
+    <tr><td>Two-architecture CI</td><td><span class="tag next">to build</span></td><td>Builds arm64 today; x86_64 and the pipeline are Phase 0 work.</td></tr>
+    <tr><td>Declarative engine</td><td><span class="tag next">to build</span></td><td>Config already carries node lists with scaling and deadband; the general engine is Phase 1.</td></tr>
+    <tr><td>Conformance suite and fixtures</td><td><span class="tag next">to build</span></td><td>Phase 2, and the prerequisite for trusting generated adapters.</td></tr>
+    <tr><td>Skills, memory and subagent contracts</td><td><span class="tag later">to build</span></td><td>Phase 3.</td></tr>
+    <tr><td>Provenance ledger and patch cadence</td><td><span class="tag later">to build</span></td><td>Phase 4.</td></tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <h4>One caveat about the AWS-dependent parts</h4>
+  <p>
+    Nothing in this repository has been executed against a real AWS account. The provisioning,
+    publishing and deployment scripts are written, syntax-checked and dry-run capable, and the
+    cross-artifact consistency between them and the collector is now covered by tests — but the
+    cloud-side behaviour itself is unverified. Treat the AWS column of this roadmap as designed,
+    not proven, until one real provisioning run has happened.
+  </p>
+</div>
+
+<h2>Sequencing advice</h2>
+
+<div class="box decide">
+  <h4>If you only do two things</h4>
+  <p>
+    <strong>1. Finish Phase 0 properly</strong> — two architectures, a precise smoke test, digest
+    pinning. It is unglamorous and it is the foundation every later phase assumes.
+  </p>
+  <p>
+    <strong>2. Build the conformance suite before generating any adapters.</strong> Generation is
+    cheap and verification is not, and the order matters: a suite written after the first generated
+    adapters will be shaped around them instead of around correctness.
+  </p>
+  <p style="margin-bottom:0">
+    Phase 1 can run in parallel with Phase 0 once the image exists, and Phase 3 should not start
+    until Phase 2 can tell an agent "no" — a factory without a quality gate produces confident,
+    unverifiable firmware.
+  </p>
+</div>
+
+<footer>
+  <p>
+    Companion to <code>docs/edge-platform-proposal.html</code>. Both describe a direction that has not
+    been built: nothing here changes the current codebase, and the proposal's open decisions — update
+    strategy, first protocols, surrogate source, write policy and review owner — still gate the start.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>
