@@ -30,7 +30,7 @@ and `/stats`.
 ## Verification
 
 ```bash
-make check    # ruff format/check + mypy --strict + unit tests
+make check    # ruff format/check + mypy --strict + secret guard + unit tests
 make verify   # check + local mTLS/spool smoke (Docker, mosquitto_pub)
 make smoke    # build the Tier 1 collector images and boot-smoke each
 make sbom     # CycloneDX SBOMs for the collector images (after make smoke)
@@ -40,8 +40,12 @@ make sbom-nucleus   # CycloneDX SBOMs for the nucleus images
 
 `make check` needs no Docker. The smoke targets expect Docker; `make verify`
 also needs the host Mosquitto clients. CI runs the gates on code and image
-changes to `main` and on pull requests; documentation-only changes skip the
+changes to `main` and on pull requests; documentation-only changes skip that
 pipeline. Image builds reuse a GitHub Actions buildx cache between runs.
+
+`make hooks` installs the pre-commit secret guard locally. A separate security
+workflow runs on every push and pull request, including documentation-only
+changes, because the main pipeline's path filter deliberately skips those.
 
 ## End-to-end smoke
 

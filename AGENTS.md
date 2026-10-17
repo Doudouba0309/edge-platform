@@ -88,7 +88,8 @@ adapter.
 Violating these breaks the build, leaks credentials, or silently corrupts data.
 
 1. **Never commit secrets.** `certs/`, `.env`, `*.pem`, `*.key` are git-ignored.
-   A leaked IoT private key means rotating a field device.
+   `scripts/check-secrets.sh` and the pre-commit hook enforce this; a leaked IoT
+   private key means rotating a field device.
 2. **Component versions are immutable.** Never edit a published Greengrass
    component version in place — bump `GG_COMPONENT_VERSION`.
 3. **The wire format is a contract.** If you change `Sample` or `Batch`,
@@ -184,7 +185,7 @@ Nothing else in this repository is destructive.
 
 The gates, all runnable:
 
-- `make check` — ruff format/check, `mypy --strict`, unit tests.
+- `make check` — ruff format/check, `mypy --strict`, secret guard, unit tests.
 - `make verify` — `check` plus `scripts/smoke-local.sh`, the local mTLS and
   store-and-forward outage/replay check.
 - `make smoke` — `scripts/smoke-image.sh`, which builds and boots both Tier 1
@@ -196,9 +197,10 @@ The gates, all runnable:
   both architectures.
 
 `make check` needs no Docker. The smoke targets and both SBOM targets need
-Docker; `make verify` also needs the host Mosquitto clients. Do not invent
-commands that do not run, and do not claim a change is verified by a command
-that has not been defined.
+Docker; `make verify` also needs the host Mosquitto clients. `make hooks`
+installs the local pre-commit secret guard. Do not invent commands that do not
+run, and do not claim a change is verified by a command that has not been
+defined.
 
 ## Definition of done
 

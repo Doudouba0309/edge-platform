@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: help install format lint test check verify smoke sbom sbom-nucleus nucleus-smoke
+.PHONY: help install hooks format lint test check check-secrets verify smoke sbom sbom-nucleus nucleus-smoke
 
 help:
 	@printf '%s\n' \
@@ -14,7 +14,8 @@ help:
 		'format   apply ruff formatting and safe fixes' \
 		'lint     ruff format/check + mypy --strict' \
 		'test     unit tests' \
-		'check    lint + test (no Docker required)' \
+		'hooks    install the pre-commit hook in .git/hooks' \
+		'check    lint + secret guard + test (no Docker required)' \
 		'verify   check + local mTLS/spool smoke (Docker required)' \
 		'smoke    build the Tier 1 collector images and boot-smoke each (Docker required)' \
 		'sbom     generate CycloneDX SBOMs for the collector images (after make smoke)' \
@@ -37,7 +38,13 @@ lint:
 test:
 	$(PYTEST) -q
 
-check: lint test
+check-secrets:
+	./scripts/check-secrets.sh
+
+check: lint test check-secrets
+
+hooks:
+	$(VENV)/bin/pre-commit install
 
 verify: check
 	./scripts/smoke-local.sh
