@@ -1,0 +1,47 @@
+gateway_id: dev-gateway-01
+log_level: INFO
+
+batching:
+  queue_max: 1000
+  overflow_policy: drop_oldest
+  max_samples: 5
+  flush_interval_s: 0.5
+
+health:
+  enabled: true
+  host: 0.0.0.0
+  port: 8081
+
+sink:
+  kind: mqtt
+  host: mosquitto
+  port: 8883
+  client_id: dev-gateway-01
+  qos: 1
+  ca_file: /run/edge-platform/certs/ca.crt
+  cert_file: /run/edge-platform/certs/client.crt
+  key_file: /run/edge-platform/certs/client.key
+  keepalive_s: 30
+  connect_timeout_s: 5.0
+  publish_timeout_s: 3.0
+
+spool:
+  enabled: true
+  path: /var/lib/edge-platform/spool.sqlite3
+  max_bytes: 1048576
+  replay_interval_s: 0.5
+
+sources:
+  synthetic:
+    enabled: true
+    device_id: plc-line-1
+    interval_s: 0.2
+    metrics:
+      - name: temperature
+        value: 25.0
+        step: 0.5
+        unit: degC
+      - name: pressure
+        value: 101.3
+        step: 0.0
+        unit: kPa

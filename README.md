@@ -31,3 +31,19 @@ telemetry batch and status message, stops the broker to force spooling,
 restarts it to verify replay, checks RSS against the 150 MB ceiling and sends
 SIGTERM. It requires Docker and `mosquitto_pub`; all generated material stays
 under the git-ignored `certs/` and `var/` directories.
+
+## Base image
+
+The Tier 1 base image is built for both architectures and smoke-tested:
+
+```bash
+./scripts/smoke-image.sh
+```
+
+This builds `edge-platform-base:arm64` and `edge-platform-base:amd64` from the
+pinned Ubuntu 24.04 base with runtime dependencies constrained by
+`constraints.txt`, runs each container against a local mTLS Mosquitto
+broker, validates telemetry, checks RSS against the 150 MB ceiling and verifies
+SIGTERM. It requires Docker/buildx and `mosquitto_pub`. The container config is
+[`config/collector-container.yaml`](config/collector-container.yaml); images are
+local artifacts and are not published by this script.

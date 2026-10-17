@@ -176,8 +176,9 @@ Nothing else in this repository is destructive.
 defined alongside the toolchain and will be documented here when they exist. Do
 not invent commands that do not run, and do not claim a change is verified by a
 command that has not been defined. Until the Makefile lands, the running
-equivalents are `.venv/bin/pytest -q` for unit tests and
-`./scripts/smoke-local.sh` for the end-to-end mTLS/spool check.
+equivalents are `.venv/bin/pytest -q` for unit tests,
+`./scripts/smoke-local.sh` for the end-to-end mTLS/spool check, and
+`./scripts/smoke-image.sh` for the two-architecture image boot check.
 
 ## Definition of done
 

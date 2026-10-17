@@ -1,0 +1,16 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+certs
+var
+docs
+tests
+scripts
+config
+*.zip
+greengrass-build

@@ -27,7 +27,7 @@ openssl req -new -newkey rsa:2048 -nodes -sha256 \
   -keyout server.key -out server.csr \
   -subj "/CN=localhost" >/dev/null 2>&1
 cat > server.ext <<'EOF'
-subjectAltName=DNS:localhost,IP:127.0.0.1
+subjectAltName=DNS:localhost,DNS:mosquitto,IP:127.0.0.1
 extendedKeyUsage=serverAuth
 EOF
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
