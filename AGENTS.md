@@ -127,6 +127,12 @@ Violating these breaks the build, leaks credentials, or silently corrupts data.
   filtering from data loss.
 - **Timestamps**: always timezone-aware UTC on the wire; naive input is treated
   as UTC.
+- **Status is not telemetry.** Presence and heartbeat go to
+  `edge/<gateway>/status` through a separate reporter; do not put them in a
+  `Batch`.
+- **Logs are evidence.** Shipped container/component logs are JSON, written to
+  a bounded rotating file, and redacted. A support bundle must be safe to send
+  to a remote engineer.
 - **Health**: `/readyz` is 200 only when every enabled source is connected.
 - **Spool budget** applies to payload bytes, not file size (SQLite does not
   return freed pages promptly).
@@ -238,8 +244,10 @@ A change is complete when all of these hold:
 The collector has been provisioned, published and deployed into the sandbox:
 component 1.0.4 published, deployed to `edge-platform-sandbox-core`, and a
 telemetry batch was observed on `edge/edge-platform-sandbox-core/plc-line-1/telemetry`.
-The sandbox resources are intentionally left up for inspection; teardown is a
-separate, explicitly confirmed action.
+The supportability slice (JSON logs, status heartbeat, support bundle) is built
+as component 1.0.5 locally but is not yet deployed to the sandbox. The sandbox
+resources are intentionally left up for inspection; teardown is a separate,
+explicitly confirmed action.
 
 The following paths are covered by tests:
 

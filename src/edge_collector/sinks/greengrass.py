@@ -27,7 +27,7 @@ from typing import Any
 from edge_collector.config import GreengrassSinkConfig
 from edge_collector.models import Batch
 from edge_collector.sinks.base import Sink, SinkUnavailable
-from edge_collector.topics import telemetry_topic
+from edge_collector.topics import status_topic, telemetry_topic
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +56,12 @@ def authorization_hint(exc: Exception) -> str:
 
 class GreengrassIpcSink(Sink):
     kind = "greengrass"
+    supports_status = True
 
-    def __init__(self, cfg: GreengrassSinkConfig) -> None:
+    def __init__(self, cfg: GreengrassSinkConfig, *, gateway_id: str) -> None:
         super().__init__()
         self.cfg = cfg
+        self.gateway_id = gateway_id
         self._ipc: Any = None
         self._qos: Any = None
         self._last_error: str | None = None
@@ -159,6 +161,21 @@ class GreengrassIpcSink(Sink):
         self._ipc = None
         self._last_error = self.stats.last_error or "publish failed"
         self._next_attempt_at = time.monotonic() + self.cfg.reconnect_interval_s
+
+    async def publish_status(self, payload: bytes) -> None:
+        """Publish presence/heartbeat through the nucleus (best effort)."""
+        if self._ipc is None:
+            await self._connect_if_due()
+            if self._ipc is None:
+                raise SinkUnavailable(f"greengrass ipc unavailable ({self._last_error})")
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(self._publish, status_topic(self.gateway_id), payload),
+                timeout=self.cfg.timeout_s,
+            )
+        except Exception as exc:
+            log.warning("greengrass status publish failed: %s", exc)
+            raise SinkUnavailable(f"greengrass status publish failed: {exc}") from exc
 
     def _publish(self, topic: str, payload: bytes) -> None:
         self._ipc.publish_to_iot_core(

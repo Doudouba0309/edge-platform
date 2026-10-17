@@ -31,6 +31,7 @@ class SinkStats:
 
 class Sink(abc.ABC):
     kind: ClassVar[str]
+    supports_status: ClassVar[bool] = False
 
     def __init__(self) -> None:
         self.stats = SinkStats()
@@ -51,6 +52,10 @@ class Sink(abc.ABC):
     @abc.abstractmethod
     async def stop(self) -> None:
         """Release the transport. Must be idempotent."""
+
+    async def publish_status(self, payload: bytes) -> None:
+        """Best-effort gateway presence/heartbeat. No-op unless supported."""
+        return None
 
     @property
     def healthy(self) -> bool:

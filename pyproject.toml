@@ -27,6 +27,7 @@ dev = [
 
 [project.scripts]
 edge-collector = "edge_collector.__main__:main"
+edge-collector-support = "edge_collector.support:main"
 
 [build-system]
 requires = ["hatchling==1.32.4"]

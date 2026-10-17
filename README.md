@@ -29,6 +29,25 @@ make install
 Health endpoints are served on `http://127.0.0.1:8081`: `/healthz`, `/readyz`
 and `/stats`.
 
+### Logs, status and support
+
+The local config writes human-readable logs to stdout and to
+`var/collector.log`. The container and Greengrass component configs use JSON
+logs with a bounded rotating file. Gateway presence and heartbeats are
+published separately from telemetry on `edge/<gateway>/status`.
+
+Create a redacted support bundle for remote diagnosis:
+
+```bash
+.venv/bin/edge-collector-support \
+  --config config/collector.yaml \
+  --log-file var/collector.log \
+  --output var/support-bundle.zip
+```
+
+The bundle contains the config, recent logs, system/disk information and spool
+summary. Private keys and obvious secrets are redacted.
+
 ## Verification
 
 ```bash

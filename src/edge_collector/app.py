@@ -14,12 +14,14 @@ from edge_collector.config import (
     MqttSinkConfig,
 )
 from edge_collector.health import HealthServer
+from edge_collector.logging_setup import reset_log_context, set_log_context
 from edge_collector.pipeline import Pipeline
 from edge_collector.sinks import GreengrassIpcSink, LogSink, MqttSink, Sink
 from edge_collector.sources import EmitFn
 from edge_collector.sources.base import Source
 from edge_collector.sources.synthetic import SyntheticSource
 from edge_collector.spool import Spool
+from edge_collector.status import StatusReporter, collector_version
 
 
 def build_source(cfg: CollectorConfig, emit: EmitFn) -> Source:
@@ -32,7 +34,7 @@ def build_sink(cfg: CollectorConfig) -> Sink:
     if isinstance(cfg.sink, MqttSinkConfig):
         return MqttSink(cfg.sink, gateway_id=cfg.gateway_id)
     if isinstance(cfg.sink, GreengrassSinkConfig):
-        return GreengrassIpcSink(cfg.sink)
+        return GreengrassIpcSink(cfg.sink, gateway_id=cfg.gateway_id)
     if isinstance(cfg.sink, LogSinkConfig):
         return LogSink()
     raise ConfigError(f"unsupported sink kind: {cfg.sink.kind}")
@@ -46,6 +48,13 @@ class CollectorApp:
         self.pipeline = Pipeline(cfg.gateway_id, cfg.batching, self.sink, self.spool)
         self.sources: list[Source] = [build_source(cfg, self.pipeline.submit)]
         self.health = HealthServer(cfg.health, self._snapshot)
+        self.status = StatusReporter(
+            gateway_id=cfg.gateway_id,
+            sink=self.sink,
+            snapshot=self._snapshot,
+            interval_s=cfg.status_interval_s,
+            enabled=cfg.status_enabled,
+        )
         self._stop = asyncio.Event()
 
     def request_stop(self) -> None:
@@ -86,6 +95,10 @@ class CollectorApp:
     async def run(self, *, handle_signals: bool = True) -> None:
         loop = asyncio.get_running_loop()
         signals = (signal.SIGINT, signal.SIGTERM)
+        log_token = set_log_context(
+            gateway_id=self.cfg.gateway_id,
+            service_version=collector_version(),
+        )
 
         if handle_signals:
             for sig in signals:
@@ -104,6 +117,7 @@ class CollectorApp:
             for source in self.sources:
                 await source.start()
             await self.health.start()
+            await self.status.start()
 
             stop_task = asyncio.create_task(self._stop.wait(), name="stop-signal")
             fail_task = asyncio.create_task(self.pipeline.failed.wait(), name="pipeline-failed")
@@ -117,6 +131,7 @@ class CollectorApp:
             if fail_task is not None:
                 fail_task.cancel()
 
+            await self.status.stop()
             for source in self.sources:
                 await source.stop()
             await self.pipeline.stop()
@@ -128,6 +143,7 @@ class CollectorApp:
                 for sig in signals:
                     with contextlib.suppress(NotImplementedError, RuntimeError):
                         loop.remove_signal_handler(sig)
+            reset_log_context(log_token)
 
         if pipeline_failed:
             raise RuntimeError("pipeline consumer failed; see logs")

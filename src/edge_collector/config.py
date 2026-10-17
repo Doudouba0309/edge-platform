@@ -138,6 +138,12 @@ class SourcesConfig(BaseModel):
 class CollectorConfig(BaseModel):
     gateway_id: str = Field(default="dev-gateway-01", pattern=GATEWAY_ID_PATTERN)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    log_json: bool = True
+    log_file: str | None = None
+    log_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    log_backup_count: int = Field(default=5, ge=1)
+    status_enabled: bool = True
+    status_interval_s: float = Field(default=30.0, gt=0)
     batching: BatchingConfig = Field(default_factory=BatchingConfig)
     health: HealthConfig = Field(default_factory=HealthConfig)
     sink: AnySinkConfig = Field(default_factory=LogSinkConfig)

@@ -1,5 +1,7 @@
 gateway_id: dev-gateway-01
 log_level: INFO
+log_json: false
+status_enabled: false
 
 batching:
   queue_max: 1000

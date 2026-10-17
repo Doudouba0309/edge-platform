@@ -32,7 +32,13 @@ def main() -> int:
     if not status:
         print("no status records", file=sys.stderr)
         return 1
-    if not any(record["payload"] == "online" for record in status):
+
+    def _is_online(payload: object) -> bool:
+        if payload == "online":
+            return True
+        return isinstance(payload, dict) and payload.get("state") == "online"
+
+    if not any(_is_online(record["payload"]) for record in status):
         print("no online status record", file=sys.stderr)
         return 1
 

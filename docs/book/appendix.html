@@ -30,7 +30,7 @@
       <tr><td><code>AGENTS.md</code></td><td>The operating manual: layering, invariants, traps, never-run commands, definition of done.</td></tr>
       <tr><td><code>src/edge_collector/</code></td><td>The collector package: models, config, pipeline, spool, sinks, sources, health, app.</td></tr>
       <tr><td><code>schemas/telemetry-batch.schema.json</code></td><td>The committed frozen JSON Schema.</td></tr>
-      <tr><td><code>tests/</code></td><td>134 unit, contract and artifact tests.</td></tr>
+      <tr><td><code>tests/</code></td><td>141 unit, contract and artifact tests.</td></tr>
       <tr><td><code>config/</code></td><td>Local, smoke and container configurations.</td></tr>
       <tr><td><code>Dockerfile</code></td><td>The Tier 1 collector image.</td></tr>
       <tr><td><code>constraints.txt</code></td><td>Pinned runtime dependencies for the image.</td></tr>
@@ -57,7 +57,7 @@
     <tbody>
       <tr><td><code>make install</code></td><td>Creates the virtual environment and installs dependencies.</td><td>uv</td></tr>
       <tr><td><code>make hooks</code></td><td>Installs the pre-commit secret hook.</td><td>pre-commit (installed by <code>make install</code>)</td></tr>
-      <tr><td><code>make check</code></td><td>Ruff, mypy, 134 tests and the secret guard.</td><td>Nothing else</td></tr>
+      <tr><td><code>make check</code></td><td>Ruff, mypy, 141 tests and the secret guard.</td><td>Nothing else</td></tr>
       <tr><td><code>make verify</code></td><td>Check plus local mTLS, outage, replay, RSS and SIGTERM.</td><td>Docker + Mosquitto clients</td></tr>
       <tr><td><code>make smoke</code></td><td>Builds and boots both Tier 1 collector images.</td><td>Docker</td></tr>
       <tr><td><code>PLATFORMS=linux/arm64 make smoke</code></td><td>Faster single-architecture image test.</td><td>Docker</td></tr>
@@ -87,7 +87,7 @@
       <tr><td>Role alias</td><td><code>edge-platform-sandbox-TESRoleAlias</code></td><td>Name the nucleus asks for credentials.</td></tr>
       <tr><td>Observer</td><td><code>edge-platform-sandbox-observer</code></td><td>Read-only MQTT observer for validation.</td></tr>
       <tr><td>Component</td><td><code>io.github.doudouba0309.EdgePlatform.Collector</code></td><td>Collector component.</td></tr>
-      <tr><td>Running version</td><td><code>1.0.4</code></td><td>Deployed and <code>RUNNING</code> at the time of writing.</td></tr>
+      <tr><td>Running version</td><td><code>1.0.4</code></td><td>Deployed and <code>RUNNING</code> at the time of writing. The 1.0.5 supportability artifact is built locally, not deployed.</td></tr>
       <tr><td>Topic</td><td><code>edge/edge-platform-sandbox-core/plc-line-1/telemetry</code></td><td>Observed telemetry.</td></tr>
       <tr><td>Bucket</td><td><code>edge-platform-sandbox-&lt;account-id&gt;-ap-southeast-1</code></td><td>Private component artifact storage.</td></tr>
       <tr><td>Local core</td><td><code>edge-platform-aws-core</code></td><td>Docker container running the nucleus.</td></tr>

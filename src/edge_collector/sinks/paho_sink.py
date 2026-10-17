@@ -116,6 +116,17 @@ class PahoSink(Sink):
             log.info("%s: stopped", self.name)
 
     # ---------------------------------------------------------------- publish #
+    async def publish_status(self, payload: bytes, *, retain: bool = True) -> None:
+        """Publish a status/heartbeat payload on the retained status topic."""
+        client = self._client
+        if client is None or self._status_topic is None or not self._connected.is_set():
+            return
+        try:
+            info = client.publish(self._status_topic, payload, qos=1, retain=retain)
+            await asyncio.to_thread(info.wait_for_publish, self._publish_timeout_s)
+        except Exception as exc:  # pragma: no cover - best effort
+            log.debug("%s: status publish failed: %s", self.name, exc)
+
     async def announce(self, state: bytes) -> None:
         """Publish retained gateway presence on the status topic."""
         client = self._client

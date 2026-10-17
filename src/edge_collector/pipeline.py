@@ -25,6 +25,7 @@ from typing import cast
 from pydantic import ValidationError
 
 from edge_collector.config import BatchingConfig
+from edge_collector.logging_setup import reset_log_context, set_log_context
 from edge_collector.models import Batch, Sample
 from edge_collector.sinks import Sink, SinkUnavailable
 from edge_collector.spool import Spool
@@ -218,7 +219,15 @@ class Pipeline:
                 samples=by_device[device_id],
             )
             self.stats.batches_built += 1
-            await self._deliver(batch)
+            token = set_log_context(
+                gateway_id=self.gateway_id,
+                device_id=device_id,
+                batch_seq=self._seq,
+            )
+            try:
+                await self._deliver(batch)
+            finally:
+                reset_log_context(token)
 
         if final:
             log.info("pipeline flushed %d device batch(es) on shutdown", len(by_device))

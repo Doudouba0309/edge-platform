@@ -90,7 +90,10 @@ class FakeIpc:
 
 
 async def test_greengrass_sink_publishes_through_the_fake_ipc(make_batch) -> None:
-    sink = GreengrassIpcSink(GreengrassSinkConfig(ipc_socket="/tmp/greengrass-test.sock"))
+    sink = GreengrassIpcSink(
+        GreengrassSinkConfig(ipc_socket="/tmp/greengrass-test.sock"),
+        gateway_id="dev-gateway-01",
+    )
     fake = FakeIpc()
     sink._ipc = fake
     sink._qos = "AT_LEAST_ONCE"
@@ -114,7 +117,7 @@ async def test_greengrass_sink_publishes_through_the_fake_ipc(make_batch) -> Non
 
 
 async def test_greengrass_sink_degrades_when_ipc_is_unavailable(make_batch, monkeypatch) -> None:
-    sink = GreengrassIpcSink(GreengrassSinkConfig())
+    sink = GreengrassIpcSink(GreengrassSinkConfig(), gateway_id="dev-gateway-01")
 
     async def no_connect() -> None:
         return None
@@ -129,3 +132,18 @@ def test_authorization_hint_recognises_ipc_denials() -> None:
     assert "accessControl" in hint
     assert "topic strings" in hint
     assert authorization_hint(RuntimeError("socket closed")) == ""
+
+
+async def test_greengrass_sink_publishes_status(make_batch) -> None:
+    sink = GreengrassIpcSink(
+        GreengrassSinkConfig(ipc_socket="/tmp/greengrass-test.sock"),
+        gateway_id="dev-gateway-01",
+    )
+    fake = FakeIpc()
+    sink._ipc = fake
+    sink._qos = "AT_LEAST_ONCE"
+
+    await sink.publish_status(b'{"state":"online"}')
+
+    assert fake.calls[0]["topic_name"] == "edge/dev-gateway-01/status"
+    assert fake.calls[0]["payload"] == b'{"state":"online"}'

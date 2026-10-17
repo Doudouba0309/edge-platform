@@ -12,6 +12,7 @@ from edge_collector.topics import status_topic, telemetry_topic
 
 class MqttSink(PahoSink):
     kind = "mqtt"
+    supports_status = True
 
     def __init__(self, cfg: MqttSinkConfig, *, gateway_id: str) -> None:
         self.cfg = cfg

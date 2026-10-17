@@ -1,5 +1,7 @@
 gateway_id: dev-gateway-01
 log_level: INFO
+log_json: false
+log_file: var/collector.log
 
 batching:
   queue_max: 1000

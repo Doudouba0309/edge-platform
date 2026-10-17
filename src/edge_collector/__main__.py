@@ -9,6 +9,7 @@ from pathlib import Path
 
 from edge_collector.app import CollectorApp
 from edge_collector.config import ConfigError, load_config
+from edge_collector.logging_setup import configure_logging
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,9 +30,12 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         parser.error(str(exc))
 
-    logging.basicConfig(
+    configure_logging(
         level=cfg.log_level,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        json_logs=cfg.log_json,
+        log_file=cfg.log_file,
+        max_bytes=cfg.log_max_bytes,
+        backup_count=cfg.log_backup_count,
     )
 
     try:

@@ -24,6 +24,7 @@ ComponentConfiguration:
             - "aws.greengrass#PublishToIoTCore"
           resources:
             - "edge/+/+/telemetry"
+            - "edge/+/status"
 
 Manifests:
   - Platform:
@@ -47,6 +48,10 @@ Manifests:
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
           log_level: "{configuration:/logLevel}"
+          log_json: true
+          log_file: "{work:path}/collector.jsonl"
+          status_enabled: true
+          status_interval_s: 30
           batching:
             queue_max: 1000
             overflow_policy: drop_oldest
@@ -98,6 +103,10 @@ Manifests:
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
           log_level: "{configuration:/logLevel}"
+          log_json: true
+          log_file: "{work:path}/collector.jsonl"
+          status_enabled: true
+          status_interval_s: 30
           batching:
             queue_max: 1000
             overflow_policy: drop_oldest

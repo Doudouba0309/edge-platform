@@ -29,7 +29,7 @@ REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.4"
+COMPONENT_VERSION = "1.0.5"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
@@ -137,6 +137,7 @@ def test_recipe_and_policy_agree_on_identity_and_topics() -> None:
     entry = next(iter(access.values()))
     assert "aws.greengrass#PublishToIoTCore" in entry["operations"]
     assert "edge/+/+/telemetry" in entry["resources"]
+    assert "edge/+/status" in entry["resources"]
     assert _mqtt_matches(telemetry_topic(GATEWAY_ID, DEVICE_ID), "edge/+/+/telemetry")
 
     statements = policy["Statement"]
