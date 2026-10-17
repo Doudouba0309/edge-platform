@@ -36,6 +36,9 @@ def main() -> int:
     if not status:
         print("no status records", file=sys.stderr)
         return 1
+    if not any(record["payload"] == "online" for record in status):
+        print("no online status record", file=sys.stderr)
+        return 1
 
     validator = Draft202012Validator(load_schema(repo_schema_path()))
     for record in telemetry:

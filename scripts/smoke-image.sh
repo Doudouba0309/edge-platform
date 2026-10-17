@@ -8,6 +8,7 @@ cd "$ROOT"
 
 NETWORK="edge-platform-smoke-net"
 BROKER="edge-platform-smoke-broker"
+GATEWAY_ID="dev-gateway-01"  # must match config/collector-container.yaml
 SMOKE_DIR="$ROOT/var/smoke-image"
 PLATFORMS="${PLATFORMS:-linux/arm64 linux/amd64}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
@@ -78,6 +79,13 @@ telemetry_count() {
   fi
 }
 
+reset_retained_status() {
+  mosquitto_pub -h 127.0.0.1 -p 8883 \
+    --cafile certs/ca.crt --cert certs/client.crt --key certs/client.key \
+    -r -n -t "edge/${GATEWAY_ID}/status" >/dev/null 2>&1 \
+    || fail "could not clear retained status"
+}
+
 docker rm -f "$BROKER" >/dev/null 2>&1 || true
 docker network rm "$NETWORK" >/dev/null 2>&1 || true
 docker network create "$NETWORK" >/dev/null
@@ -111,6 +119,7 @@ for platform in $PLATFORMS; do
   [ "$image_arch" = "$arch" ] \
     || fail "image ${image} is ${image_arch}, expected ${arch}"
 
+  reset_retained_status
   : > "$capture"
   .venv/bin/python scripts/smoke_subscriber.py \
     --host 127.0.0.1 --port 8883 \
@@ -165,7 +174,6 @@ for platform in $PLATFORMS; do
   }
 
   docker logs "$COLLECTOR" > "$collector_log" 2>&1
-  .venv/bin/python scripts/smoke_validate.py "$capture"
 
   RSS_KB="$(docker exec "$COLLECTOR" python -c \
     'data = open("/proc/1/status").read(); print(data.split("VmRSS:")[1].split()[0])')"
@@ -185,6 +193,15 @@ for platform in $PLATFORMS; do
     || fail "no MQTT connection in ${arch} log"
   grep -q "mqtt: stopped" "$collector_log" \
     || fail "no clean sink stop in ${arch} log"
+
+  for i in $(seq 1 50); do
+    grep -q '"offline"' "$capture" 2>/dev/null && break
+    sleep 0.1
+  done
+  grep -q '"offline"' "$capture" 2>/dev/null \
+    || fail "no offline status after SIGTERM (${arch})"
+
+  .venv/bin/python scripts/smoke_validate.py "$capture"
 
   docker rm -f "$COLLECTOR" >/dev/null
   COLLECTOR=""
