@@ -18,12 +18,17 @@ ComponentConfiguration:
     logLevel: "INFO"
     accessControl:
       aws.greengrass.ipc.mqttproxy:
-        "__COMPONENT_NAME__:mqttproxy:1":
+        "__COMPONENT_NAME__:mqttproxy:telemetry":
           policyDescription: "Allow this component to publish telemetry through the nucleus."
           operations:
             - "aws.greengrass#PublishToIoTCore"
           resources:
             - "edge/+/+/telemetry"
+        "__COMPONENT_NAME__:mqttproxy:status":
+          policyDescription: "Allow this component to publish gateway presence and heartbeat."
+          operations:
+            - "aws.greengrass#PublishToIoTCore"
+          resources:
             - "edge/+/status"
 
 Manifests:
@@ -40,7 +45,7 @@ Manifests:
           set -eu
           ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           python3 -m venv "{work:path}/venv"
-          "{work:path}/venv/bin/pip" install \
+          "{work:path}/venv/bin/pip" install --force-reinstall \
             --no-index --find-links "$ART/wheels" "edge-collector[aws]==__DIST_VERSION__"
       Run:
         Script: |
@@ -95,7 +100,7 @@ Manifests:
           set -eu
           ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           python3 -m venv "{work:path}/venv"
-          "{work:path}/venv/bin/pip" install \
+          "{work:path}/venv/bin/pip" install --force-reinstall \
             --no-index --find-links "$ART/wheels" "edge-collector[aws]==__DIST_VERSION__"
       Run:
         Script: |

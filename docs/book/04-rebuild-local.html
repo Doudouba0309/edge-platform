@@ -157,12 +157,12 @@ make component</code></pre>
   </p>
   <div class="callout ok">
     <strong>Expected.</strong>
-    <code>build/component/EdgeCollector-1.0.5.zip</code> (about 14 MB),
+    <code>build/component/EdgeCollector-1.0.7.zip</code> (about 14 MB),
     <code>recipe.yaml</code> and <code>iot-policy.json</code>.
   </div>
   <p>Inspect what was produced:</p>
   <pre><code>ls -lh build/component
-unzip -l build/component/EdgeCollector-1.0.5.zip | head -20
+unzip -l build/component/EdgeCollector-1.0.7.zip | head -20
 grep -n -A6 'accessControl' build/component/recipe.yaml</code></pre>
   <p class="small">
     The version may change when a new immutable component version is published.

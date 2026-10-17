@@ -29,7 +29,7 @@ REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.5"
+COMPONENT_VERSION = "1.0.7"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
@@ -134,10 +134,14 @@ def test_recipe_and_policy_agree_on_identity_and_topics() -> None:
     assert config["deviceId"] == DEVICE_ID
 
     access = config["accessControl"]["aws.greengrass.ipc.mqttproxy"]
-    entry = next(iter(access.values()))
-    assert "aws.greengrass#PublishToIoTCore" in entry["operations"]
-    assert "edge/+/+/telemetry" in entry["resources"]
-    assert "edge/+/status" in entry["resources"]
+    operations: set[str] = set()
+    resources: set[str] = set()
+    for entry in access.values():
+        operations.update(entry["operations"])
+        resources.update(entry["resources"])
+    assert "aws.greengrass#PublishToIoTCore" in operations
+    assert "edge/+/+/telemetry" in resources
+    assert "edge/+/status" in resources
     assert _mqtt_matches(telemetry_topic(GATEWAY_ID, DEVICE_ID), "edge/+/+/telemetry")
 
     statements = policy["Statement"]
@@ -173,6 +177,7 @@ def test_recipe_install_uses_the_universal_wheelhouse() -> None:
     recipe = _recipe()
     script = recipe["Manifests"][0]["Lifecycle"]["Install"]["Script"]
     assert "python3 -m venv" in script
+    assert "--force-reinstall" in script
     assert "--no-index --find-links" in script
     assert f"edge-collector[aws]=={_values()['DIST_VERSION']}" in script
 
