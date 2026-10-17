@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
-from edge_collector.config import MqttSinkConfig
-from edge_collector.sinks import LogSink, MqttSink, SinkUnavailable
+from edge_collector.config import GreengrassSinkConfig, MqttSinkConfig
+from edge_collector.sinks import (
+    GreengrassIpcSink,
+    LogSink,
+    MqttSink,
+    SinkUnavailable,
+)
+from edge_collector.sinks.greengrass import authorization_hint
 
 
 def _mqtt_config(**overrides: object) -> MqttSinkConfig:
@@ -67,3 +75,57 @@ def test_mqtt_config_allows_plain_mqtt() -> None:
     assert cfg.ca_file is None
     assert cfg.cert_file is None
     assert cfg.key_file is None
+
+
+class FakeIpc:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+        self.closed = False
+
+    def publish_to_iot_core(self, **kwargs: object) -> None:
+        self.calls.append(kwargs)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+async def test_greengrass_sink_publishes_through_the_fake_ipc(make_batch) -> None:
+    sink = GreengrassIpcSink(GreengrassSinkConfig(ipc_socket="/tmp/greengrass-test.sock"))
+    fake = FakeIpc()
+    sink._ipc = fake
+    sink._qos = "AT_LEAST_ONCE"
+
+    batch = make_batch(gateway_id="dev-gateway-01")
+    await sink.send(batch)
+
+    assert len(fake.calls) == 1
+    call = fake.calls[0]
+    assert call["topic_name"] == "edge/dev-gateway-01/plc-line-1/telemetry"
+    assert call["qos"] == "AT_LEAST_ONCE"
+    payload = json.loads(call["payload"])  # type: ignore[arg-type]
+    assert payload["gateway_id"] == "dev-gateway-01"
+    assert sink.stats.sent == 1
+    assert sink.stats.bytes_sent > 0
+    assert sink.healthy
+
+    await sink.stop()
+    assert fake.closed
+    assert not sink.healthy
+
+
+async def test_greengrass_sink_degrades_when_ipc_is_unavailable(make_batch, monkeypatch) -> None:
+    sink = GreengrassIpcSink(GreengrassSinkConfig())
+
+    async def no_connect() -> None:
+        return None
+
+    monkeypatch.setattr(sink, "_connect_if_due", no_connect)
+    with pytest.raises(SinkUnavailable, match="greengrass ipc unavailable"):
+        await sink.send(make_batch())
+
+
+def test_authorization_hint_recognises_ipc_denials() -> None:
+    hint = authorization_hint(RuntimeError("AccessDeniedException: not authorized"))
+    assert "accessControl" in hint
+    assert "topic strings" in hint
+    assert authorization_hint(RuntimeError("socket closed")) == ""

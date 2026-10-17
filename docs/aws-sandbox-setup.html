@@ -658,9 +658,10 @@ Confirmed non-production: yes</code></pre>
   </div>
 
   <p>
-    The collector currently has log and MQTT sinks. The Greengrass IPC sink will be
-    added to that same component so it can ask the nucleus to publish to IoT Core.
-    It is not an AWS component, an IoT thing, or a separate deployment.
+    The collector's Greengrass IPC sink is now implemented and unit-tested. It is
+    part of the same component, so it can ask the nucleus to publish to IoT Core.
+    It is not an AWS component, an IoT thing, or a separate deployment. Component
+    packaging is the next step.
   </p>
 
   <h3>Resource map</h3>
@@ -672,7 +673,7 @@ Confirmed non-production: yes</code></pre>
       <tr><td>Test core thing + thing group</td><td>Provisioning script</td><td>Pending component build</td></tr>
       <tr><td>Device certificate + IoT policy</td><td>Provisioning script</td><td>Pending component build</td></tr>
       <tr><td>IAM role + role alias (TES)</td><td>Provisioning script</td><td>Pending component build</td></tr>
-      <tr><td>Collector component version</td><td>Recipe publish</td><td>Pending component build</td></tr>
+      <tr><td>Collector component version</td><td>Recipe publish</td><td>Pending packaging of the sink</td></tr>
       <tr><td>Greengrass deployment</td><td>Deployment script</td><td>Pending component build</td></tr>
     </tbody>
   </table>

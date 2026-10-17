@@ -82,8 +82,25 @@ class MqttSinkConfig(BaseModel):
         return self
 
 
+class GreengrassSinkConfig(BaseModel):
+    """Publishes through the Greengrass nucleus IPC socket."""
+
+    kind: Literal["greengrass"] = "greengrass"
+    qos: Literal[0, 1] = 1
+
+    ipc_socket: str = Field(
+        default_factory=lambda: os.environ.get(
+            "AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT",
+            "/run/greengrass/ipc.sock",
+        ),
+        description="Nucleus IPC socket; normally supplied by Greengrass",
+    )
+    timeout_s: float = Field(default=10.0, gt=0)
+    reconnect_interval_s: float = Field(default=15.0, gt=0)
+
+
 AnySinkConfig = Annotated[
-    LogSinkConfig | MqttSinkConfig,
+    LogSinkConfig | MqttSinkConfig | GreengrassSinkConfig,
     Field(discriminator="kind"),
 ]
 

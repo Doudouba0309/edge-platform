@@ -9,12 +9,13 @@ import signal
 from edge_collector.config import (
     CollectorConfig,
     ConfigError,
+    GreengrassSinkConfig,
     LogSinkConfig,
     MqttSinkConfig,
 )
 from edge_collector.health import HealthServer
 from edge_collector.pipeline import Pipeline
-from edge_collector.sinks import LogSink, MqttSink, Sink
+from edge_collector.sinks import GreengrassIpcSink, LogSink, MqttSink, Sink
 from edge_collector.sources import EmitFn
 from edge_collector.sources.base import Source
 from edge_collector.sources.synthetic import SyntheticSource
@@ -30,6 +31,8 @@ def build_source(cfg: CollectorConfig, emit: EmitFn) -> Source:
 def build_sink(cfg: CollectorConfig) -> Sink:
     if isinstance(cfg.sink, MqttSinkConfig):
         return MqttSink(cfg.sink, gateway_id=cfg.gateway_id)
+    if isinstance(cfg.sink, GreengrassSinkConfig):
+        return GreengrassIpcSink(cfg.sink)
     if isinstance(cfg.sink, LogSinkConfig):
         return LogSink()
     raise ConfigError(f"unsupported sink kind: {cfg.sink.kind}")

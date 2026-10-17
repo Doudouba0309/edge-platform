@@ -12,6 +12,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aws = [
+    "awsiotsdk>=1.22,<2",
+]
 dev = [
     "jsonschema>=4.23",
     "mypy>=1.11",
@@ -54,5 +57,5 @@ plugins = ["pydantic.mypy"]
 files = ["src"]
 
 [[tool.mypy.overrides]]
-module = ["paho.*"]
+module = ["paho.*", "awsiot.*"]
 ignore_missing_imports = true

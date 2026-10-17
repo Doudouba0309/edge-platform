@@ -217,15 +217,19 @@ A change is complete when all of these hold:
 
 ## Notes on the AWS path
 
-Nothing here has been run against a real AWS account. Treat every AWS-facing
-claim as a design intention.
+The collector has not been provisioned, published or deployed into a real AWS
+account yet. The sandbox itself has been verified with read-only CLI calls and an
+empty private bucket. Treat every runtime AWS-facing claim as a design intention.
 
-Two parts are verifiable offline:
+These parts are verifiable offline:
 
 - **Mutual TLS.** `scripts/smoke-local.sh` runs the MQTT sink against a local
   broker that requires a client certificate, proving certificate resolution,
   hostname verification, client-cert authentication and the publish topic. The
   AWS IoT Core endpoint, policy and authorisation remain unexercised.
+- **Greengrass IPC sink.** `GreengrassIpcSink` is implemented and unit-tested
+  against a fake IPC client. A real publish requires a provisioned core and a
+  deployed collector component.
 - **Containerised nucleus.** `scripts/smoke-nucleus.sh` builds the pinned
   nucleus `2.18.4` image and verifies "Launched Nucleus successfully", the IPC
   socket, identity reuse across a restart, and clean SIGTERM, all offline. The
