@@ -381,12 +381,24 @@
   </p>
 
   <h3>Option A — IAM admin user (simplest for a throwaway sandbox)</h3>
+
+  <div class="callout">
+    <strong>Before you sign out of root: note your 12-digit account ID.</strong>
+    The IAM user sign-in page asks for the account ID (or an account alias).
+    While signed in as root, click the account name in the top-right corner and
+    copy the <strong>Account ID</strong>. Optionally create an alias in
+    <strong>IAM → Dashboard → AWS Account</strong>; then you can sign in at
+    <code>https://edge-platform-sandbox.signin.aws.amazon.com/console</code>.
+    If you are already signed out, choose <strong>Forgot account ID?</strong> on
+    the sign-in page and enter the root email.
+  </div>
+
   <ol>
     <li>Open <a href="https://console.aws.amazon.com/iam/" target="_blank" rel="noreferrer">IAM</a> → <strong>Users</strong> → <strong>Create user</strong>.</li>
     <li>Name it <code>edge-platform-admin</code>.</li>
     <li>Check <strong>Provide user access to the AWS Management Console</strong>, choose a custom password, and require a password reset on first sign-in.</li>
     <li>On the permissions step, choose <strong>Attach policies directly</strong> and select <strong>AdministratorAccess</strong>.</li>
-    <li>Create the user. Sign out of root, then sign in as <code>edge-platform-admin</code>.</li>
+    <li>Create the user. Sign out of root, choose <strong>IAM user</strong> on the sign-in page, enter your account ID or alias, then sign in as <code>edge-platform-admin</code>.</li>
     <li>In the new user's <strong>Security credentials</strong>, enable MFA with an authenticator app.</li>
     <li>Still in <strong>Security credentials</strong>, choose <strong>Create access key</strong> → <strong>Command Line Interface (CLI)</strong> and download the CSV.</li>
   </ol>
