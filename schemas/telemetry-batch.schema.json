@@ -1,0 +1,156 @@
+{
+  "$defs": {
+    "Quality": {
+      "description": "OPC UA style quality, kept so downstream can filter bad data.",
+      "enum": [
+        "good",
+        "uncertain",
+        "bad",
+        "stale"
+      ],
+      "title": "Quality",
+      "type": "string"
+    },
+    "Sample": {
+      "description": "A single measurement from a single metric.",
+      "properties": {
+        "device_id": {
+          "description": "Logical asset the metric belongs to",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Device Id",
+          "type": "string"
+        },
+        "metric": {
+          "description": "Metric name, e.g. 'temperature'",
+          "title": "Metric",
+          "type": "string"
+        },
+        "origin": {
+          "default": "",
+          "description": "Where it came from: OPC UA node id, MQTT topic, or register",
+          "title": "Origin",
+          "type": "string"
+        },
+        "quality": {
+          "$ref": "#/$defs/Quality",
+          "default": "good"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "tags": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "object"
+        },
+        "ts": {
+          "description": "Observation time, always timezone-aware UTC",
+          "format": "date-time",
+          "title": "Ts",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "device_id",
+        "metric",
+        "value",
+        "ts",
+        "source"
+      ],
+      "title": "Sample",
+      "type": "object"
+    },
+    "SourceKind": {
+      "description": "Protocol family a sample was normalised from.",
+      "enum": [
+        "opcua",
+        "mqtt",
+        "modbus",
+        "sim"
+      ],
+      "title": "SourceKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://edge-intelligence.example/schemas/telemetry-batch.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One northbound message published by edge-platform to edge/<gateway_id>/<device_id>/telemetry. Every sample shares the batch device_id. schema_version 1.0.",
+  "properties": {
+    "device_id": {
+      "description": "Logical asset the batch belongs to",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Device Id",
+      "type": "string"
+    },
+    "gateway_id": {
+      "description": "Gateway identity; also the AWS IoT thing name",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$",
+      "title": "Gateway Id",
+      "type": "string"
+    },
+    "produced_at": {
+      "format": "date-time",
+      "title": "Produced At",
+      "type": "string"
+    },
+    "samples": {
+      "items": {
+        "$ref": "#/$defs/Sample"
+      },
+      "minItems": 1,
+      "title": "Samples",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seq": {
+      "description": "Monotonic per-process batch counter",
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "gateway_id",
+    "device_id",
+    "seq",
+    "samples"
+  ],
+  "title": "Edge telemetry batch",
+  "type": "object"
+}
