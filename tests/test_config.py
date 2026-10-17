@@ -20,6 +20,8 @@ def test_loads_the_default_development_config() -> None:
     assert cfg.gateway_id == "dev-gateway-01"
     assert cfg.batching.max_samples == 10
     assert cfg.health.port == 8081
+    assert cfg.sink.kind == "log"
+    assert cfg.spool.enabled is False
     assert cfg.sources.synthetic.enabled
     assert [metric.name for metric in cfg.sources.synthetic.metrics] == [
         "temperature",
@@ -105,3 +107,32 @@ sources:
 def test_collector_config_rejects_an_empty_source_set() -> None:
     with pytest.raises(ValueError, match="at least one source"):
         CollectorConfig()
+
+
+def test_loads_the_smoke_config() -> None:
+    cfg = load_config("config/collector-smoke.yaml")
+    assert cfg.sink.kind == "mqtt"
+    assert cfg.sink.port == 8883
+    assert cfg.spool.enabled is True
+    assert cfg.spool.path == "var/spool.sqlite3"
+    assert cfg.sources.synthetic.interval_s == 0.2
+
+
+def test_partial_mqtt_tls_config_is_rejected(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        "bad-tls.yaml",
+        """
+gateway_id: gw-dev-01
+sink:
+  kind: mqtt
+  ca_file: certs/ca.crt
+sources:
+  synthetic:
+    enabled: true
+    metrics:
+      - {name: temperature, value: 25.0}
+""",
+    )
+    with pytest.raises(ConfigError, match="ca_file, cert_file and key_file"):
+        load_config(path)

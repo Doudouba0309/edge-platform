@@ -6,10 +6,11 @@ import asyncio
 
 import pytest
 
-from edge_collector.config import BatchingConfig
+from edge_collector.config import BatchingConfig, SpoolConfig
 from edge_collector.models import Batch, Sample, SourceKind, utcnow
 from edge_collector.pipeline import Pipeline
 from edge_collector.sinks import SinkUnavailable
+from edge_collector.spool import Spool
 
 
 class RecordingSink:
@@ -25,6 +26,17 @@ class FailingSink:
         raise SinkUnavailable("broker is down")
 
 
+class FlakySink:
+    def __init__(self) -> None:
+        self.available = False
+        self.batches: list[Batch] = []
+
+    async def send(self, batch: Batch) -> None:
+        if not self.available:
+            raise SinkUnavailable("broker is down")
+        self.batches.append(batch)
+
+
 def _sample(metric: str = "m", device_id: str = "plc-line-1") -> Sample:
     return Sample(
         device_id=device_id,
@@ -36,7 +48,9 @@ def _sample(metric: str = "m", device_id: str = "plc-line-1") -> Sample:
 
 
 def _pipeline(
-    sink: RecordingSink | FailingSink,
+    sink: RecordingSink | FailingSink | FlakySink,
+    *,
+    spool: Spool | None = None,
     **batching: object,
 ) -> Pipeline:
     values: dict[str, object] = {
@@ -46,7 +60,7 @@ def _pipeline(
     }
     values.update(batching)
     cfg = BatchingConfig(**values)  # type: ignore[arg-type]
-    return Pipeline("gw-dev-01", cfg, sink)
+    return Pipeline("gw-dev-01", cfg, sink, spool or Spool(SpoolConfig()))
 
 
 async def test_flushes_at_max_samples() -> None:
@@ -217,6 +231,7 @@ async def test_snapshot_exposes_queue_and_buffer_depth() -> None:
     assert snapshot["queue_depth"] == 0
     assert snapshot["buffer_depth"] == 1
     assert snapshot["per_source"] == {"sim": 1}
+    assert snapshot["spool_enabled"] is False
 
     await pipeline.stop()
 
@@ -228,3 +243,120 @@ async def test_overflow_policy_only_accepts_the_two_documented_values(
     # The Literal type rejects anything else; this test pins the accepted set.
     cfg = BatchingConfig(overflow_policy=policy)  # type: ignore[arg-type]
     assert cfg.overflow_policy == policy
+
+
+async def test_sink_failure_spools_then_replays(tmp_path) -> None:
+    sink = FlakySink()
+    spool = Spool(
+        SpoolConfig(
+            enabled=True,
+            path=str(tmp_path / "spool.sqlite3"),
+            max_bytes=10_000,
+            replay_interval_s=0.05,
+        )
+    )
+    spool.open()
+    pipeline = _pipeline(sink, spool=spool, max_samples=1)
+    await pipeline.start()
+
+    pipeline.submit(_sample("a"))
+    await asyncio.sleep(0.15)
+
+    assert pipeline.stats.spooled == 1
+    assert pipeline.stats.spool_pending == 1
+    assert sink.batches == []
+
+    sink.available = True
+    await asyncio.sleep(0.25)
+
+    assert pipeline.stats.replayed == 1
+    assert pipeline.stats.spool_pending == 0
+    assert [batch.samples[0].metric for batch in sink.batches] == ["a"]
+
+    await pipeline.stop()
+    spool.close()
+
+
+async def test_spool_backlog_is_sent_oldest_first(tmp_path) -> None:
+    sink = FlakySink()
+    spool = Spool(
+        SpoolConfig(
+            enabled=True,
+            path=str(tmp_path / "spool.sqlite3"),
+            max_bytes=10_000,
+            replay_interval_s=0.05,
+        )
+    )
+    spool.open()
+    pipeline = _pipeline(sink, spool=spool, max_samples=1)
+    await pipeline.start()
+
+    pipeline.submit(_sample("a"))
+    await asyncio.sleep(0.05)
+    pipeline.submit(_sample("b"))
+    await asyncio.sleep(0.1)
+
+    assert pipeline.stats.spooled == 2
+    assert sink.batches == []
+
+    sink.available = True
+    await asyncio.sleep(0.25)
+
+    assert [batch.samples[0].metric for batch in sink.batches] == ["a", "b"]
+    assert pipeline.stats.replayed == 2
+
+    await pipeline.stop()
+    spool.close()
+
+
+async def test_corrupt_spooled_batch_is_dropped(tmp_path) -> None:
+    spool = Spool(
+        SpoolConfig(
+            enabled=True,
+            path=str(tmp_path / "spool.sqlite3"),
+            max_bytes=10_000,
+            replay_interval_s=0.05,
+        )
+    )
+    spool.open()
+    assert spool.append(b"not-json")
+
+    pipeline = _pipeline(RecordingSink(), spool=spool, max_samples=100)
+    await pipeline.start()
+    await asyncio.sleep(0.15)
+
+    assert pipeline.stats.spool_corrupt_dropped == 1
+    assert pipeline.stats.spool_pending == 0
+
+    await pipeline.stop()
+    spool.close()
+
+
+async def test_start_reports_existing_spool_backlog(tmp_path) -> None:
+    spool = Spool(
+        SpoolConfig(
+            enabled=True,
+            path=str(tmp_path / "spool.sqlite3"),
+            max_bytes=10_000,
+            replay_interval_s=10.0,
+        )
+    )
+    spool.open()
+    assert spool.append(_batch_payload())
+
+    pipeline = _pipeline(RecordingSink(), spool=spool, max_samples=100)
+    await pipeline.start()
+    assert pipeline.stats.spool_pending == 1
+
+    await pipeline.stop()
+    spool.close()
+
+
+def _batch_payload() -> bytes:
+    batch = Batch(
+        gateway_id="gw-dev-01",
+        device_id="plc-line-1",
+        seq=1,
+        samples=[_sample()],
+    )
+    return batch.to_json()

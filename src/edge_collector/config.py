@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, model_validator
@@ -40,6 +40,52 @@ class HealthConfig(BaseModel):
     enabled: bool = True
     host: str = "127.0.0.1"
     port: int = Field(default=8081, ge=0, le=65535)
+
+
+class SpoolConfig(BaseModel):
+    """Disk-backed store-and-forward buffer."""
+
+    enabled: bool = False
+    path: str = "var/spool.sqlite3"
+    max_bytes: int = Field(
+        default=64 * 1024 * 1024,
+        gt=0,
+        description="Payload-byte budget, not SQLite file size",
+    )
+    replay_interval_s: float = Field(default=1.0, gt=0)
+
+
+class LogSinkConfig(BaseModel):
+    kind: Literal["log"] = "log"
+
+
+class MqttSinkConfig(BaseModel):
+    """MQTT transport; TLS with a client certificate is used when configured."""
+
+    kind: Literal["mqtt"] = "mqtt"
+    host: str = "127.0.0.1"
+    port: int = Field(default=8883, ge=1, le=65535)
+    client_id: str | None = None
+    qos: Literal[0, 1, 2] = 1
+    ca_file: str | None = None
+    cert_file: str | None = None
+    key_file: str | None = None
+    keepalive_s: int = Field(default=30, ge=1)
+    connect_timeout_s: float = Field(default=5.0, gt=0)
+    publish_timeout_s: float = Field(default=5.0, gt=0)
+
+    @model_validator(mode="after")
+    def _tls_files_are_all_or_nothing(self) -> MqttSinkConfig:
+        files = (self.ca_file, self.cert_file, self.key_file)
+        if any(files) and not all(files):
+            raise ValueError("mqtt TLS needs ca_file, cert_file and key_file together")
+        return self
+
+
+AnySinkConfig = Annotated[
+    LogSinkConfig | MqttSinkConfig,
+    Field(discriminator="kind"),
+]
 
 
 class SyntheticMetricConfig(BaseModel):
@@ -79,6 +125,8 @@ class CollectorConfig(BaseModel):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     batching: BatchingConfig = Field(default_factory=BatchingConfig)
     health: HealthConfig = Field(default_factory=HealthConfig)
+    sink: AnySinkConfig = Field(default_factory=LogSinkConfig)
+    spool: SpoolConfig = Field(default_factory=SpoolConfig)
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
 
     @model_validator(mode="after")

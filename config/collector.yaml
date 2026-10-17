@@ -12,6 +12,12 @@ health:
   host: 127.0.0.1
   port: 8081
 
+sink:
+  kind: log
+
+spool:
+  enabled: false
+
 sources:
   synthetic:
     enabled: true

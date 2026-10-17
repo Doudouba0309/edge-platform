@@ -5,8 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 
-from edge_collector.app import CollectorApp, build_source
-from edge_collector.config import CollectorConfig
+from edge_collector.app import CollectorApp, build_sink, build_source
+from edge_collector.config import CollectorConfig, load_config
+from edge_collector.sinks import LogSink, MqttSink
 from edge_collector.sources.synthetic import SyntheticSource
 
 
@@ -63,11 +64,18 @@ def test_build_source_returns_the_synthetic_source() -> None:
     assert source.name == "synthetic"
 
 
+def test_build_sink_returns_the_configured_transport() -> None:
+    assert isinstance(build_sink(_config()), LogSink)
+    assert isinstance(build_sink(load_config("config/collector-smoke.yaml")), MqttSink)
+
+
 async def test_snapshot_is_not_ready_before_start() -> None:
     app = CollectorApp(_config())
     snapshot = app._snapshot()
     assert snapshot["ready"] is False
     assert snapshot["sources"]["synthetic"]["connected"] is False  # type: ignore[index]
+    assert snapshot["sink"]["name"] == "log"  # type: ignore[index]
+    assert snapshot["spool"]["enabled"] is False  # type: ignore[index]
 
 
 async def test_app_runs_and_shuts_down_cleanly() -> None:

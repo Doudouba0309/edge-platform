@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from edge_collector.sinks.base import Sink, SinkUnavailable
+from edge_collector.sinks.base import Sink, SinkStats, SinkUnavailable
 from edge_collector.sinks.log import LogSink
+from edge_collector.sinks.mqtt import MqttSink
 
-__all__ = ["LogSink", "Sink", "SinkUnavailable"]
+__all__ = ["LogSink", "MqttSink", "Sink", "SinkStats", "SinkUnavailable"]

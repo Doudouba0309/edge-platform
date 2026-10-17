@@ -175,8 +175,9 @@ Nothing else in this repository is destructive.
 `make check`, `make verify` and `make smoke` are the intended gates. They are
 defined alongside the toolchain and will be documented here when they exist. Do
 not invent commands that do not run, and do not claim a change is verified by a
-command that has not been defined. Until the toolchain lands, verification
-happens on explicit human instruction.
+command that has not been defined. Until the Makefile lands, the running
+equivalents are `.venv/bin/pytest -q` for unit tests and
+`./scripts/smoke-local.sh` for the end-to-end mTLS/spool check.
 
 ## Definition of done
 
@@ -192,19 +193,19 @@ A change is complete when all of these hold:
 Nothing here has been run against a real AWS account. Treat every AWS-facing
 claim as a design intention.
 
-Two parts are verifiable offline once the toolchain lands:
+Two parts are verifiable offline:
 
-- **Mutual TLS.** The shipping `iotcore` sink can be run against a local broker
-  that requires a client certificate, proving certificate resolution, hostname
-  verification, client-cert authentication and the publish topic. Only the AWS
-  endpoint, policy and authorisation remain unexercised. Re-run this after
-  touching the mutual-TLS path.
-- **Containerised nucleus.** The nucleus can be built and checked offline: it
-  reaches "Launched Nucleus successfully", serves its IPC socket, survives a
-  restart on the same identity, and shuts down cleanly on SIGTERM. The boundary
-  it proves: the nucleus only authenticates IPC clients it launched itself, so
-  an outside client is refused with `KeyError: 'SVCUID'` and must degrade to
-  spooling rather than crashing. Re-run this after touching the Greengrass sink.
+- **Mutual TLS.** `scripts/smoke-local.sh` runs the MQTT sink against a local
+  broker that requires a client certificate, proving certificate resolution,
+  hostname verification, client-cert authentication and the publish topic. The
+  AWS IoT Core endpoint, policy and authorisation remain unexercised.
+- **Containerised nucleus.** When it lands, the nucleus can be built and checked
+  offline: it reaches "Launched Nucleus successfully", serves its IPC socket,
+  survives a restart on the same identity, and shuts down cleanly on SIGTERM.
+  The boundary it proves: the nucleus only authenticates IPC clients it launched
+  itself, so an outside client is refused with `KeyError: 'SVCUID'` and must
+  degrade to spooling rather than crashing. Re-run this after touching the
+  Greengrass sink.
 
 When you do run the AWS path: `--dry-run` first, check IAM permissions, then
 tear down to clean up. An offline Greengrass nucleus cannot install
