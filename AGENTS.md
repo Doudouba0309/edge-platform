@@ -167,7 +167,21 @@ Do not reintroduce these. Each was a real failure:
 8. **A recipe manifest with no `Platform` key applies to all platforms**, and a
    core device must match at least one manifest or the deployment simply fails.
    Listing only `aarch64` silently excludes every x86_64 device, and a pure-Python
-   artifact does not exempt you — the rule is unconditional.
+   artifact does not exempt you — the rule is unconditional. The architecture
+   values are `aarch64` and `amd64`; `arm64` does not match a core that reports
+   `aarch64`.
+9. **The IoT credentials endpoint is not derived from the data endpoint.** Ask
+   IoT for `iot:CredentialProvider`; it is a different prefix and hostname.
+10. **The TES role needs `iot:AssumeRoleWithCertificate` on the role alias**, plus
+    `s3:GetBucketLocation` on the bucket ARN and `s3:GetObject` on the object
+    ARN. Missing any of these produces a 403 that looks like an IPC or artifact
+    problem in the component log.
+11. **The registered MQTT-proxy IPC operation is
+    `aws.greengrass#PublishToIoTCore`.** The recipe example spelling
+    `aws.greengrass.ipc.mqttproxy:publish` is rejected by the nucleus, and an
+    invalid policy in the package store can keep blocking authorization even
+    after a new component version is installed. Use a clean core root when the
+    old recipe is invalid.
 
 ## Never run these without explicit human instruction
 
@@ -221,19 +235,21 @@ A change is complete when all of these hold:
 
 ## Notes on the AWS path
 
-The collector has not been provisioned, published or deployed into a real AWS
-account yet. The sandbox itself has been verified with read-only CLI calls and an
-empty private bucket. Treat every runtime AWS-facing claim as a design intention.
+The collector has been provisioned, published and deployed into the sandbox:
+component 1.0.4 published, deployed to `edge-platform-sandbox-core`, and a
+telemetry batch was observed on `edge/edge-platform-sandbox-core/plc-line-1/telemetry`.
+The sandbox resources are intentionally left up for inspection; teardown is a
+separate, explicitly confirmed action.
 
-These parts are verifiable offline:
+The following paths are covered by tests:
 
 - **Mutual TLS.** `scripts/smoke-local.sh` runs the MQTT sink against a local
   broker that requires a client certificate, proving certificate resolution,
   hostname verification, client-cert authentication and the publish topic. The
-  AWS IoT Core endpoint, policy and authorisation remain unexercised.
-- **Greengrass IPC sink.** `GreengrassIpcSink` is implemented and unit-tested
-  against a fake IPC client. A real publish requires a provisioned core and a
-  deployed collector component.
+  nucleus-to-IoT-Core mTLS leg was exercised by the sandbox proof.
+- **Greengrass IPC sink.** Unit-tested against a fake IPC client, and verified
+  end-to-end in the sandbox with component 1.0.4. The real publish reached
+  `edge/edge-platform-sandbox-core/plc-line-1/telemetry`.
 - **Containerised nucleus.** `scripts/smoke-nucleus.sh` builds the pinned
   nucleus `2.18.4` image and verifies "Launched Nucleus successfully", the IPC
   socket, identity reuse across a restart, and clean SIGTERM, all offline. The
@@ -242,10 +258,10 @@ These parts are verifiable offline:
   degrade to spooling rather than crashing. Re-run this after touching the
   Greengrass sink.
 
-When you do run the AWS path: `--dry-run` first, check IAM permissions, then
-tear down to clean up. An offline Greengrass nucleus cannot install
-`aws.greengrass.Cli`, so `greengrass-cli` only appears after one successful
-cloud provisioning run.
+When you rerun the AWS path: `--dry-run` first, check IAM permissions, and tear
+down with explicit confirmation. An offline Greengrass nucleus cannot install
+`aws.greengrass.Cli`, so `greengrass-cli` only appears after a successful cloud
+provisioning run.
 
 ## Handover note
 

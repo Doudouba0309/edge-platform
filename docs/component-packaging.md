@@ -42,6 +42,8 @@ asserts:
 - the policy's `client/<thing>` grant matches the recipe's gateway/thing name;
 - the policy's `edge/*` publish grant covers the collector's telemetry and
   status topics;
+- the policy grants `iot:AssumeRoleWithCertificate` on the role alias and the
+  Greengrass control-plane actions used by the nucleus;
 - the recipe IPC `accessControl` covers the telemetry topic;
 - both Tier 1 architectures are present and share the same artifact/lifecycle;
 - policy topics use AWS IoT globs, not MQTT `+`/`#`.

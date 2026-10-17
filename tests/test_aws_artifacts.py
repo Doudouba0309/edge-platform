@@ -22,13 +22,14 @@ RECIPE_TEMPLATE = ROOT / "deploy" / "greengrass" / "recipe.yaml.tmpl"
 POLICY_TEMPLATE = ROOT / "deploy" / "aws" / "iot-policy.json.tmpl"
 
 THING_NAME = "edge-platform-sandbox-core"
+ROLE_ALIAS = "edge-platform-sandbox-TESRoleAlias"
 GATEWAY_ID = THING_NAME
 DEVICE_ID = "plc-line-1"
 REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.0"
+COMPONENT_VERSION = "1.0.4"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
@@ -49,6 +50,7 @@ def _values() -> dict[str, str]:
         "REGION": REGION,
         "ACCOUNT_ID": ACCOUNT_ID,
         "THING_NAME": THING_NAME,
+        "ROLE_ALIAS": ROLE_ALIAS,
     }
 
 
@@ -82,6 +84,22 @@ def _topic_resources(statements: list[dict[str, Any]], action: str) -> list[str]
     return resources
 
 
+def _mqtt_matches(topic: str, topic_filter: str) -> bool:
+    """Match a concrete topic against an MQTT filter (+ one level, # rest)."""
+    topic_parts = topic.split("/")
+    filter_parts = topic_filter.split("/")
+    for index, part in enumerate(filter_parts):
+        if part == "#":
+            return index == len(filter_parts) - 1
+        if index >= len(topic_parts):
+            return False
+        if part == "+":
+            continue
+        if part != topic_parts[index]:
+            return False
+    return len(topic_parts) == len(filter_parts)
+
+
 def _matches(topic: str, resource: str) -> bool:
     if resource.startswith("arn:") and ":topic/" in resource:
         resource = resource.split(":topic/", 1)[1]
@@ -104,7 +122,7 @@ def test_recipe_and_policy_agree_on_identity_and_topics() -> None:
     platforms = {
         (manifest["Platform"]["os"], manifest["Platform"]["architecture"]) for manifest in manifests
     }
-    assert platforms == {("linux", "arm64"), ("linux", "amd64")}
+    assert platforms == {("linux", "aarch64"), ("linux", "amd64")}
     assert manifests[0]["Artifacts"] == manifests[1]["Artifacts"]
     assert manifests[0]["Lifecycle"] == manifests[1]["Lifecycle"]
 
@@ -117,9 +135,9 @@ def test_recipe_and_policy_agree_on_identity_and_topics() -> None:
 
     access = config["accessControl"]["aws.greengrass.ipc.mqttproxy"]
     entry = next(iter(access.values()))
-    assert "aws.greengrass.ipc.mqttproxy:publish" in entry["operations"]
-    assert "edge/*/telemetry" in entry["resources"]
-    assert _matches(telemetry_topic(GATEWAY_ID, DEVICE_ID), "edge/*/telemetry")
+    assert "aws.greengrass#PublishToIoTCore" in entry["operations"]
+    assert "edge/+/+/telemetry" in entry["resources"]
+    assert _mqtt_matches(telemetry_topic(GATEWAY_ID, DEVICE_ID), "edge/+/+/telemetry")
 
     statements = policy["Statement"]
     connect = _topic_resources(statements, "iot:Connect")
@@ -132,6 +150,18 @@ def test_recipe_and_policy_agree_on_identity_and_topics() -> None:
 
     subscribe = _topic_resources(statements, "iot:Subscribe")
     assert any(_matches("edge/any/telemetry", r) for r in subscribe)
+
+    greengrass_actions: list[str] = []
+    for statement in statements:
+        actions = statement.get("Action", [])
+        if isinstance(actions, str):
+            actions = [actions]
+        greengrass_actions.extend(action for action in actions if action.startswith("greengrass:"))
+    assert "greengrass:ResolveComponentCandidates" in greengrass_actions
+    assert "greengrass:GetDeploymentConfiguration" in greengrass_actions
+
+    assume = _topic_resources(statements, "iot:AssumeRoleWithCertificate")
+    assert assume == [f"arn:aws:iot:{REGION}:{ACCOUNT_ID}:rolealias/{ROLE_ALIAS}"]
 
     for resource in publish:
         assert "#" not in resource

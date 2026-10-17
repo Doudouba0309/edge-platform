@@ -19,6 +19,25 @@
       ]
     },
     {
+      "Sid": "AssumeTheTokenExchangeRole",
+      "Effect": "Allow",
+      "Action": ["iot:AssumeRoleWithCertificate"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:rolealias/__ROLE_ALIAS__"
+      ]
+    },
+    {
+      "Sid": "GreengrassControlPlane",
+      "Effect": "Allow",
+      "Action": [
+        "greengrass:GetComponentVersionArtifact",
+        "greengrass:GetDeploymentConfiguration",
+        "greengrass:ResolveComponentCandidates",
+        "greengrass:ListThingGroupsForCoreDevice"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "SubscribeToNucleusTopics",
       "Effect": "Allow",
       "Action": ["iot:Subscribe"],

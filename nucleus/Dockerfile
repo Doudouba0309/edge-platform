@@ -20,6 +20,8 @@ RUN apt-get update \
         openjdk-17-jre-headless \
         openssl \
         procps \
+        python3 \
+        python3-venv \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 

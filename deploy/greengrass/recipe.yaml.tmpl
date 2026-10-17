@@ -21,14 +21,14 @@ ComponentConfiguration:
         "__COMPONENT_NAME__:mqttproxy:1":
           policyDescription: "Allow this component to publish telemetry through the nucleus."
           operations:
-            - "aws.greengrass.ipc.mqttproxy:publish"
+            - "aws.greengrass#PublishToIoTCore"
           resources:
-            - "edge/*/telemetry"
+            - "edge/+/+/telemetry"
 
 Manifests:
   - Platform:
       os: linux
-      architecture: arm64
+      architecture: aarch64
     Artifacts:
       - URI: "s3://__BUCKET__/__COMPONENT_NAME__/__COMPONENT_VERSION__/__ARTIFACT_NAME__"
         Unarchive: ZIP

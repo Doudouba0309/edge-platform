@@ -11,13 +11,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPONENT_NAME="${GG_COMPONENT_NAME:-io.github.doudouba0309.EdgePlatform.Collector}"
-COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.0}"
+COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.4}"
 ARTIFACT_NAME="EdgeCollector-${COMPONENT_VERSION}.zip"
 ARTIFACT_STEM="EdgeCollector-${COMPONENT_VERSION}"
 BUCKET="${GG_BUCKET:-edge-platform-sandbox-ACCOUNT-ap-southeast-1}"
 REGION="${GG_REGION:-ap-southeast-1}"
 ACCOUNT_ID="${GG_ACCOUNT_ID:-123456789012}"
 THING_NAME="${GG_THING_NAME:-edge-platform-sandbox-core}"
+ROLE_ALIAS="${GG_ROLE_ALIAS:-edge-platform-sandbox-TESRoleAlias}"
 GATEWAY_ID="${GG_GATEWAY_ID:-$THING_NAME}"
 DEVICE_ID="${GG_DEVICE_ID:-plc-line-1}"
 PYTHON="${PYTHON:-python3}"
@@ -83,7 +84,7 @@ echo "packaging ${ARTIFACT_NAME}"
 
 export COMPONENT_NAME COMPONENT_VERSION ARTIFACT_NAME ARTIFACT_STEM BUCKET
 export GATEWAY_ID DEVICE_ID DIST_VERSION
-export GG_REGION="$REGION" GG_ACCOUNT_ID="$ACCOUNT_ID" GG_THING_NAME="$THING_NAME"
+export GG_REGION="$REGION" GG_ACCOUNT_ID="$ACCOUNT_ID" GG_THING_NAME="$THING_NAME" GG_ROLE_ALIAS="$ROLE_ALIAS"
 
 "$PYTHON" - "$ROOT/deploy/greengrass/recipe.yaml.tmpl" "$BUILD_DIR/recipe.yaml" <<'PY'
 import os
@@ -120,6 +121,7 @@ values = {
     "REGION": os.environ["GG_REGION"],
     "ACCOUNT_ID": os.environ["GG_ACCOUNT_ID"],
     "THING_NAME": os.environ["GG_THING_NAME"],
+    "ROLE_ALIAS": os.environ["GG_ROLE_ALIAS"],
 }
 for key, value in values.items():
     text = text.replace(f"__{key}__", value)
