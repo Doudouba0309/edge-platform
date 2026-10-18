@@ -167,3 +167,9 @@ def test_mqtt_sink_rejects_client_id_mismatch_for_iot_core() -> None:
             ),
             gateway_id="edge-platform-sandbox-core",
         )
+
+
+async def test_mqtt_status_publish_before_start_is_unavailable() -> None:
+    sink = MqttSink(MqttSinkConfig(), gateway_id="dev-gateway-01")
+    with pytest.raises(SinkUnavailable):
+        await sink.publish_status(b'{"state":"online"}')

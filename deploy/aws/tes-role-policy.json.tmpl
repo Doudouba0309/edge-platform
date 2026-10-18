@@ -1,0 +1,47 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Receive"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topic/$aws/things/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Subscribe"],
+      "Resource": [
+        "arn:aws:iot:__REGION__:__ACCOUNT_ID__:topicfilter/$aws/things/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Connect"],
+      "Resource": ["arn:aws:iot:__REGION__:__ACCOUNT_ID__:client/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:GetThingShadow", "iot:UpdateThingShadow", "iot:DeleteThingShadow"],
+      "Resource": ["arn:aws:iot:__REGION__:__ACCOUNT_ID__:thing/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": ["arn:aws:logs:__REGION__:__ACCOUNT_ID__:log-group:/aws/greengrass/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:GetBucketLocation"],
+      "Resource": [
+        "arn:aws:s3:::__BUCKET__",
+        "arn:aws:s3:::__BUCKET__/*"
+      ]
+    }
+  ]
+}

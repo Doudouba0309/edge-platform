@@ -10,6 +10,7 @@ The default support path is **evidence first**, not a remote shell.
 - Heartbeat log event: `status published: heartbeat`
 - CloudWatch alarm: `edge-platform-sandbox-heartbeat-missing` (5 minutes, missing = breaching)
 - SNS topic: `edge-platform-sandbox-alerts` (subscribe the support address)
+- Log retention: 30 days (CloudWatch) and 30 days for `support/` objects.
 - No inbound SSH; no shell is exposed by default.
 
 ## Support bundle upload
@@ -34,6 +35,12 @@ The core must run `aws.greengrass.SecureTunneling` and an approved destination
 service. The collector image does not install an SSH server, so a tunnel cannot
 be used to obtain a shell by default. This is deliberate.
 
+## Role policy
+
+The live TES role must grant `logs:DescribeLogStreams` in addition to create/put.
+The canonical template is `deploy/aws/tes-role-policy.json.tmpl`; render
+`__REGION__`, `__ACCOUNT_ID__` and `__BUCKET__` before applying it.
+
 ## Alarm
 
 The heartbeat alarm is only useful when the SNS topic has a subscriber. Add one:
@@ -43,4 +50,6 @@ aws sns subscribe --topic-arn "$(aws sns list-topics --query "Topics[?contains(T
   --protocol email --notification-endpoint support@example.com
 ```
 
-Replace the endpoint with the client-approved support address.
+Replace the endpoint with the client-approved support address. The helper
+`scripts/subscribe-alerts.sh --email ...` does the same and prints the pending
+subscription notice.

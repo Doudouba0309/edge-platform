@@ -34,7 +34,7 @@ def test_json_formatter_includes_context_and_redacts() -> None:
         args=("temperature",),
         exc_info=None,
     )
-    token = set_log_context(gateway_id="gw-1", batch_seq=7, component_version="1.0.8")
+    token = set_log_context(gateway_id="gw-1", batch_seq=7, component_version="1.0.10")
     try:
         ContextFilter().filter(record)
         payload = json.loads(JsonFormatter().format(record))
@@ -43,7 +43,7 @@ def test_json_formatter_includes_context_and_redacts() -> None:
 
     assert payload["gateway_id"] == "gw-1"
     assert payload["batch_seq"] == 7
-    assert payload["component_version"] == "1.0.8"
+    assert payload["component_version"] == "1.0.10"
     assert "hunter2" not in payload["message"]
     assert payload["level"] == "INFO"
 

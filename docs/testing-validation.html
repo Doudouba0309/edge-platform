@@ -246,7 +246,7 @@
   <pre><code>make check</code></pre>
   <div class="expected">
     Ruff and mypy report no issues; all unit tests pass
-    (<code>145 passed</code> at the time of writing).
+    (<code>147 passed</code> at the time of writing).
   </div>
 
   <h3>2B. Run the collector locally</h3>
@@ -306,7 +306,7 @@ curl -s http://127.0.0.1:8081/stats</code></pre>
   <p class="time">1–2 minutes, after `make smoke`.</p>
 
   <p>
-    The live AWS component is <strong>1.0.9</strong> and includes the supportability
+    The live AWS component is <strong>1.0.10</strong> and includes the supportability
     slice. These checks use the local image smoke for the fastest evidence; the
     same status is now visible in AWS.
   </p>
@@ -354,7 +354,7 @@ unzip -l var/validation/support-bundle.zip</code></pre>
   </div>
   <div class="callout ok">
     <strong>Now live in AWS.</strong>
-    Component 1.0.9 publishes status and heartbeat on
+    Component 1.0.10 publishes status and heartbeat on
     <code>edge/edge-platform-sandbox-core/status</code>. The local image smoke is
     still the quickest way to inspect the raw JSON logs.
   </div>
@@ -390,7 +390,7 @@ aws greengrassv2 list-core-devices \
 
   <div class="expected">
     Component <code>io.github.doudouba0309.EdgePlatform.Collector</code><br>
-    Version <code>1.0.9</code> is the live component and includes supportability.<br>
+    Version <code>1.0.10</code> is the live component and includes supportability.<br>
     <code>lifecycleState: RUNNING</code>
   </div>
 
@@ -499,7 +499,7 @@ docker exec edge-platform-aws-core \
       <tr><td>No MQTT messages</td><td>Confirm the subscription is <code>edge/#</code>, the region is <code>ap-southeast-1</code>, and the component is running. Wait 15 seconds; batches are periodic.</td></tr>
       <tr><td>Messages are visible but malformed</td><td>Run <code>make check</code>; the schema contract tests catch most of this. Check the payload against the example in part 3C.</td></tr>
       <tr><td>Logs are plain text, not JSON</td><td>Local <code>config/collector.yaml</code> is intentionally text. Inspect <code>var/smoke-image/*-collector.log</code> for the container's JSON logs.</td></tr>
-      <tr><td>No status records in the image smoke</td><td>Check <code>var/smoke-image/*.jsonl</code>; the live 1.0.9 AWS component now includes status; check the AWS MQTT test client as well.</td></tr>
+      <tr><td>No status records in the image smoke</td><td>Check <code>var/smoke-image/*.jsonl</code>; the live 1.0.10 AWS component now includes status; check the AWS MQTT test client as well.</td></tr>
       <tr><td>Support bundle command not found</td><td>Run <code>make install</code> after pulling this change, or use <code>.venv/bin/python -m edge_collector.support ...</code>.</td></tr>
     </tbody>
   </table>

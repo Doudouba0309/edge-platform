@@ -47,7 +47,7 @@ async def test_status_reporter_publishes_online_heartbeat_and_offline() -> None:
         sink=sink,
         snapshot=_snapshot,
         interval_s=0.01,
-        component_version="1.0.8",
+        component_version="1.0.10",
     )
 
     await reporter.start()
@@ -62,7 +62,7 @@ async def test_status_reporter_publishes_online_heartbeat_and_offline() -> None:
     assert payloads[-1]["event"] == "offline"
     assert payloads[0]["gateway_id"] == "gw-status"
     assert payloads[0]["ready"] is True
-    assert payloads[0]["version"] == "1.0.8"
+    assert payloads[0]["version"] == "1.0.10"
     assert payloads[0]["package_version"] == "0.1.0"
     assert payloads[0]["heartbeat_interval_s"] == 0.01
     assert "expires_at" in payloads[0]
@@ -78,7 +78,7 @@ async def test_status_reporter_is_noop_for_sink_without_status() -> None:
         sink=sink,
         snapshot=_snapshot,
         interval_s=0.01,
-        component_version="1.0.8",
+        component_version="1.0.10",
     )
 
     await reporter.start()
@@ -98,7 +98,7 @@ async def test_status_reporter_counts_publish_failures() -> None:
         sink=sink,
         snapshot=_snapshot,
         interval_s=0.01,
-        component_version="1.0.8",
+        component_version="1.0.10",
     )
 
     await reporter.start()

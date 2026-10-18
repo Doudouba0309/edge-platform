@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPONENT_NAME="${GG_COMPONENT_NAME:-io.github.doudouba0309.EdgePlatform.Collector}"
-COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.9}"
+COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.10}"
 ARTIFACT_NAME="EdgeCollector-${COMPONENT_VERSION}.zip"
 ARTIFACT_STEM="EdgeCollector-${COMPONENT_VERSION}"
 BUCKET="${GG_BUCKET:-edge-platform-sandbox-ACCOUNT-ap-southeast-1}"

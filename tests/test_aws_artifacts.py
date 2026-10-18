@@ -29,7 +29,7 @@ REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.9"
+COMPONENT_VERSION = "1.0.10"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
@@ -206,3 +206,9 @@ def test_component_requirements_are_pinned() -> None:
         assert "==" in line
         assert ">=" not in line and "<" not in line and "~=" not in line
     assert any("--hash=sha256:" in line for line in lines)
+
+
+def test_tes_role_policy_grants_log_manager_permissions() -> None:
+    policy = (ROOT / "deploy" / "aws" / "tes-role-policy.json.tmpl").read_text()
+    assert "logs:DescribeLogStreams" in policy
+    assert "logs:PutLogEvents" in policy

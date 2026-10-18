@@ -1,5 +1,5 @@
 # Hashed runtime wheel lock for the Greengrass collector component.
-# Generated from the wheels used by component 1.0.8; build with --require-hashes.
+# Generated from the wheels used by component 1.0.10; build with --require-hashes.
 annotated-types==0.8.0 \
   --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
 awscrt==0.36.1 \
