@@ -8,7 +8,7 @@ The default support path is **evidence first**, not a remote shell.
 - Log group: `/aws/greengrass/UserComponent/ap-southeast-1/io.github.doudouba0309.EdgePlatform.Collector`
 - System log group: `/aws/greengrass/GreengrassSystemComponent/ap-southeast-1/System`
 - Heartbeat log event: `status published: heartbeat`
-- CloudWatch alarm: `edge-platform-sandbox-heartbeat-missing` (5 minutes, missing = breaching)
+- CloudWatch alarm: `edge-platform-sandbox-heartbeat-missing` (5 minutes, `FILL(metric, 0)` so absence is an explicit zero)
 - SNS topic: `edge-platform-sandbox-alerts` (subscribe the support address)
 - Log retention: 30 days (CloudWatch) and 30 days for `support/` objects.
 - No inbound SSH; no shell is exposed by default.
@@ -43,7 +43,8 @@ The canonical template is `deploy/aws/tes-role-policy.json.tmpl`; render
 
 ## Alarm
 
-The heartbeat alarm is only useful when the SNS topic has a subscriber. Add one:
+The heartbeat alarm is only useful after the SNS confirmation is clicked. The
+address is subscribed but pending. Add another if needed:
 
 ```bash
 aws sns subscribe --topic-arn "$(aws sns list-topics --query "Topics[?contains(TopicArn,'edge-platform-sandbox-alerts')].TopicArn" --output text)" \

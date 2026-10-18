@@ -1,0 +1,26 @@
+{
+  "AlarmName": "edge-platform-sandbox-heartbeat-missing",
+  "AlarmDescription": "Collector heartbeat missing for 5 minutes",
+  "Metrics": [
+    {
+      "Id": "m1",
+      "MetricStat": {
+        "Metric": {"Namespace": "EdgePlatform", "MetricName": "HeartbeatCount"},
+        "Period": 300,
+        "Stat": "Sum"
+      },
+      "ReturnData": false
+    },
+    {
+      "Id": "e1",
+      "Expression": "FILL(m1, 0)",
+      "Label": "HeartbeatCountFilled",
+      "ReturnData": true
+    }
+  ],
+  "EvaluationPeriods": 1,
+  "DatapointsToAlarm": 1,
+  "Threshold": 1,
+  "ComparisonOperator": "LessThanThreshold",
+  "TreatMissingData": "breaching"
+}

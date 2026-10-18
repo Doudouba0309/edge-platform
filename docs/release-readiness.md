@@ -4,7 +4,7 @@
 protocol review; the point map, Modbus and OPC UA are not implemented yet.
 
 **Verdict:** **Sandbox supportability is ready. Client-pilot release is not.**
-Two blockers and several actions remain.
+One confirmation and several actions remain.
 
 ## Pass
 
@@ -17,7 +17,7 @@ Two blockers and several actions remain.
 | Bucket privacy | All four public-access blocks enabled |
 | Certificate | ACTIVE; sandbox certificate valid to 2050 |
 | Heartbeat | `version: 1.0.10`, `ready: true`, `expires_at` present |
-| Alarm state | `edge-platform-sandbox-heartbeat-missing` = OK |
+| Alarm state | `edge-platform-sandbox-heartbeat-missing` = OK; missing-heartbeat drill passed |
 | No inbound shell | No exposed Docker ports; no active tunnels; no SSH by default |
 | Support upload | Dry-run resolves the S3 key correctly |
 | Health | `/healthz` 200, `/readyz` 200 |
@@ -29,8 +29,8 @@ Two blockers and several actions remain.
 
 | # | Blocker | Why it matters | Action |
 |---|---|---|---|
-| B1 | **SNS topic has no subscriber** | The heartbeat alarm fires into an empty topic; no human is paged. | Subscribe the client-approved address: `scripts/subscribe-alerts.sh --email ...`. |
-| B2 | **No missing-heartbeat drill** | The alarm has not been proven to go from OK to ALARM when heartbeats stop. | Pause the collector in a controlled window; confirm SNS delivery and recovery. Do this before a pilot. |
+| B1 | **SNS subscription is pending confirmation** | The alarm has an address, but AWS will not deliver until the confirmation link is clicked. | Click the AWS confirmation email sent to `liuyang19861110@icloud.com`. |
+| B2 | ~~No missing-heartbeat drill~~ | **Closed.** The drill went OK → ALARM after the outage window and ALARM → OK after recovery. | Evidence: 18:07:54 ALARM, 18:08:54 OK. |
 
 ## Actions before a client pilot
 
@@ -60,7 +60,7 @@ observable, but the alert is not delivered and no protocol adapter exists.
 
 Minimum gate to start a supervised pilot:
 
-1. B1 and B2 closed.
+1. B1 closed (click the SNS confirmation). B2 is closed.
 2. A1, A2 and A4 closed.
 3. One protocol with a passing surrogate and HIL.
 4. Client approval of retention and remote access.
