@@ -13,7 +13,8 @@ inbound port.
   `edge/<gateway>/status`, through a single status owner.
 - A redacted support bundle can be generated on the gateway.
 - There is **no inbound SSH** by default.
-- Interactive access, if approved for a site, must be outbound-only,
+- For v1, remote access is **evidence-only**: logs, alarm and support bundle; no interactive tunnel.
+- Interactive access, if approved later for a site, must be outbound-only,
   time-limited, audited, and restricted to a named support identity.
 - Component version and package version are separate fields in logs, status and
   the support manifest.

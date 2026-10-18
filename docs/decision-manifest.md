@@ -59,7 +59,7 @@ If not, reply with the decision IDs, for example: **“D1 JSON, D4 add uint32, D
 | ID | Decision | Options | Recommendation | Why / impact | Needed |
 |---|---|---|---|---|---|
 | D26 | Log shipping | None / CloudWatch / customer SIEM | **CloudWatch first, customer SIEM later** | Fastest path to remote evidence; SIEM is a site-specific integration. | Before v1 |
-| D27 | Remote access | Embedded SSH / AWS IoT Secure Tunneling / SSM / WireGuard | **Outbound-only AWS IoT Secure Tunneling; no inbound SSH** | No open inbound port; auditable and short-lived. | Before v1 |
+| D27 | Remote access | Embedded SSH / AWS IoT Secure Tunneling / SSM / WireGuard | **A — evidence only for v1; no tunnel yet** | No open inbound port; logs, alarm and support bundle are the support path. | Decided |
 | D28 | Shell policy | Full shell / restricted / none | **No shell by default; optional audited session over tunnel** | The default support path is logs + support bundle + deployment. | Before v1 |
 | D29 | Support bundle upload | Email/ticket / S3 presigned / client portal | **S3 presigned upload with expiry** | Keeps large logs out of chat and avoids long-lived credentials. | Before v1 |
 | D30 | Log retention | 7 / 14 / 30 / 90 days | **30 days in CloudWatch, 7 days local** | Balances evidence, cost and device disk. Needs client confirmation. | Client input |
@@ -70,7 +70,7 @@ If not, reply with the decision IDs, for example: **“D1 JSON, D4 add uint32, D
 
 | ID | Decision | Options | Recommendation | Why / impact | Needed |
 |---|---|---|---|---|---|
-| D33 | Sandbox lifecycle | Keep live / tear down / keep until v1 | **Tear down after the 1.0.10 proof; recreate with scripts** | Avoids drift and unnecessary cost. | Must decide now |
+| D33 | Sandbox lifecycle | Keep live / tear down / keep until v1 | **Keep for Phase 1** | Preserves the live proof and support path; teardown later. | Decided |
 | D34 | Provisioning | Manual CLI / repeatable scripts | **Repeatable scripts with `--dry-run` and `--yes`** | The manual path took many corrections and is not safe to repeat from memory. | Before next AWS test |
 | D35 | Naming | Free / fixed convention | **`edge-platform-<env>-<thing>`; tag `project=edge-platform`, `environment=sandbox`** | Makes cleanup and cost tracking reliable. | Before next AWS test |
 | D36 | AWS architecture proof | arm64 only / both | **arm64 live proof; x86_64 image CI; add x86 core only if a client needs it** | Avoids paying for a second core without a requirement. | Before v1 |
