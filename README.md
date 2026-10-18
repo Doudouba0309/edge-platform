@@ -18,6 +18,7 @@ Operational guides:
 - [Phase 1+ Decision Manifest](docs/decision-manifest.md)
 - [Deep Review — 18 October 2026](docs/reviews/2026-10-18-deep-review.md)
 - [Remote Support](docs/remote-support.md)
+- [Release Readiness Checklist](docs/release-readiness.md)
 
 ## Local runtime
 
