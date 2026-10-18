@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Primer — Hardware and protocol fundamentals | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="00-primer.html">Primer</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Primer · no prior industrial experience assumed</p>
+  <h1>Hardware and protocol fundamentals</h1>
+  <p class="lede">
+    A solar inverter is a computer with an electrical job. To read it, you need to
+    know which physical wire or network it uses, what language it speaks, and what
+    its numbers mean. This primer explains those pieces in plain English before
+    the design chapter uses them.
+  </p>
+
+  <div class="callout">
+    <strong>The one-sentence version.</strong>
+    A protocol is an agreed way to ask a device a question and interpret its answer;
+    the point map records which questions matter and how to turn the answers into
+    named measurements.
+  </div>
+
+  <h2>1. The layers, from wire to metric</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>Question it answers</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Physical</strong></td><td>What cable, connector or radio carries the bits?</td><td>RS-485 pair, Ethernet cable, Wi-Fi, cellular</td></tr>
+      <tr><td><strong>Transport</strong></td><td>How are bytes framed and addressed?</td><td>Modbus RTU over serial, Modbus TCP over Ethernet</td></tr>
+      <tr><td><strong>Application</strong></td><td>What does the device expose and what does the answer mean?</td><td>Modbus registers, OPC UA nodes, MQTT topics</td></tr>
+      <tr><td><strong>Semantic</strong></td><td>What is the measurement called and in what unit?</td><td><code>ac_power_kw</code> in kW; a fault code</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Most integration failures happen at a boundary between layers. The cable may be
+    fine but the baud rate wrong; the network may work but the register address is
+    off by one; the value may arrive but the byte order makes it nonsense.
+  </p>
+
+  <h2>2. RS-485 is wiring, not a protocol</h2>
+  <p>
+    <strong>RS-485</strong> is an electrical standard for a shared, twisted-pair
+    serial bus. It says how devices put signals on the wire and how they take turns.
+    It does not define what the bytes mean.
+  </p>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>What it gives you</h3>
+      <p>One pair of wires (A/B, sometimes labelled +/−) shared by several devices, often over hundreds of metres at low baud rates.</p>
+    </div>
+    <div class="tile">
+      <h3>What it does not give you</h3>
+      <p>No register map, no device names, no units and no automatic configuration. Those come from the protocol and the vendor documentation.</p>
+    </div>
+  </div>
+  <p>
+    RS-485 is usually <strong>half-duplex</strong>: one device talks while the others
+    listen. A master asks; a slave answers. Two devices must not transmit at the same
+    time. This is why polling cadence and timeouts matter.
+  </p>
+
+  <h3>Practical RS-485 checklist</h3>
+  <ul>
+    <li><strong>Daisy chain, not star.</strong> Keep a single trunk with short stubs.</li>
+    <li><strong>Termination.</strong> Usually 120 Ω at both physical ends of a long bus; not at every device.</li>
+    <li><strong>Bias.</strong> Some buses need fail-safe bias so an idle line is defined.</li>
+    <li><strong>Ground and shield.</strong> Follow the vendor’s isolation and grounding rules; do not assume the shield is a signal return.</li>
+    <li><strong>A/B labelling is inconsistent.</strong> If nothing answers, swapping A and B is a legitimate first test.</li>
+    <li><strong>Baud, parity, data bits and stop bits must match.</strong> A common default is 9600 8N1, but it is not universal.</li>
+    <li><strong>USB-RS485 adapters are not all equal.</strong> Some handle direction control automatically; some need a driver setting.</li>
+  </ul>
+
+  <h2>3. Modbus: the common language</h2>
+  <p>
+    <strong>Modbus</strong> is a simple request/response protocol. A client (often
+    called a master) asks a server (slave) to read or write a small block of data.
+    The server answers with values or an exception code.
+  </p>
+  <p>
+    Modbus is deliberately small. That is why it is everywhere, and why every vendor
+    implements a slightly different corner of it.
+  </p>
+
+  <h3>Coils and registers</h3>
+  <table>
+    <thead><tr><th>Data type</th><th>Width</th><th>Typical use</th><th>Read function</th></tr></thead>
+    <tbody>
+      <tr><td>Coil</td><td>1 bit</td><td>A readable/writable on/off state</td><td>01</td></tr>
+      <tr><td>Discrete input</td><td>1 bit</td><td>A read-only on/off state</td><td>02</td></tr>
+      <tr><td>Input register</td><td>16 bit</td><td>A read-only measurement</td><td>04</td></tr>
+      <tr><td>Holding register</td><td>16 bit</td><td>A readable/writable value or setting</td><td>03</td></tr>
+    </tbody>
+  </table>
+  <p>
+    A <strong>register</strong> is 16 bits — one unsigned number from 0 to 65535, or
+    a signed number from −32768 to 32767. A 32-bit value, a float, or a 64-bit energy
+    counter occupies two or four consecutive registers. The order of those registers
+    is not universal.
+  </p>
+
+  <h3>Function codes you will meet</h3>
+  <ul>
+    <li><strong>01</strong> — read coils.</li>
+    <li><strong>02</strong> — read discrete inputs.</li>
+    <li><strong>03</strong> — read holding registers.</li>
+    <li><strong>04</strong> — read input registers.</li>
+    <li><strong>05/06</strong> — write one coil/register. <em>Out of scope for v1.</em></li>
+    <li><strong>15/16</strong> — write multiple coils/registers. <em>Out of scope for v1.</em></li>
+  </ul>
+  <p>
+    Exception responses are normal. A device may answer “illegal data address” if a
+    register does not exist, or “server device failure” if it is busy. The collector
+    must record these as bad quality, not silently keep the previous value.
+  </p>
+
+  <h2>4. Modbus RTU versus Modbus TCP</h2>
+  <table>
+    <thead><tr><th></th><th>Modbus RTU</th><th>Modbus TCP</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Physical layer</strong></td><td>RS-485 (usually), sometimes RS-232</td><td>Ethernet / IP</td></tr>
+      <tr><td><strong>Addressing</strong></td><td>Slave/unit ID on the bus, 1–247</td><td>IP address and TCP port, usually 502; unit ID still exists in the header</td></tr>
+      <tr><td><strong>Framing</strong></td><td>Binary frame with a CRC</td><td>MBAP header plus protocol data unit; TCP provides integrity</td></tr>
+      <tr><td><strong>Timing</strong></td><td>Baud rate, parity, inter-frame silence</td><td>Network latency and TCP connection behaviour</td></tr>
+      <tr><td><strong>Typical use</strong></td><td>Field devices, inverters, meters, PLCs over a serial trunk</td><td>Plant LAN, gateway-to-device, SCADA</td></tr>
+      <tr><td><strong>Failure mode</strong></td><td>Wrong baud/parity, A/B swap, termination, slave ID</td><td>Wrong IP/port, firewall, unit ID, connection limits</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The application data — registers, function codes, scaling — is conceptually the
+    same. This is why a point map can target both, with a different connection block.
+  </p>
+
+  <h2>5. Addresses are a minefield</h2>
+  <p>
+    Vendor documents often show a “reference” such as <code>40001</code> or
+    <code>40100</code>. That is usually a human-readable convention, not the number
+    sent on the wire.
+  </p>
+  <table>
+    <thead><tr><th>Documentation says</th><th>What the wire often uses</th></tr></thead>
+    <tbody>
+      <tr><td>Holding register 40001</td><td>Offset 0</td></tr>
+      <tr><td>Holding register 40100</td><td>Offset 99</td></tr>
+      <tr><td>Input register 30001</td><td>Offset 0</td></tr>
+      <tr><td>Coil 00001</td><td>Offset 0</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Some documents show the offset directly, some show the one-based reference, and
+    some show both. The point map must record which convention it uses. Guessing an
+    address is how you read a completely different measurement and believe it.
+  </p>
+
+  <h2>6. Bits, bytes and word order</h2>
+  <p>
+    A 32-bit float is four bytes spread across two 16-bit registers. There are two
+    independent choices:
+  </p>
+  <ul>
+    <li><strong>Byte order</strong> inside each register (big-endian or little-endian).</li>
+    <li><strong>Word order</strong> between the two registers (high word first or low word first).</li>
+  </ul>
+  <p>
+    A value can therefore be interpreted four ways. A plausible-looking number is
+    not proof that the order is correct. Use a known value, such as a zero, a
+    nameplate rating or a controlled test, to prove it.
+  </p>
+  <div class="callout">
+    <strong>Rule of thumb.</strong>
+    If a value looks like a huge integer, a tiny fraction, or changes wildly with no
+    physical cause, suspect word order or type before you suspect the sensor.
+  </div>
+
+  <h2>7. Scaling and units</h2>
+  <p>
+    Devices often expose integers with implied decimals. A register value
+    <code>1234</code> may mean 123.4 V, 12.34 kW or 1234 kWh depending on the vendor.
+    The point map records the transformation:
+  </p>
+  <p><code>engineering_value = raw_value × scale + offset</code></p>
+  <p>
+    A deadband suppresses tiny changes: if the last published value was 100.0 and the
+    new value is 100.05, a deadband of 0.1 may intentionally filter it. Filtered is
+    not the same as dropped, and the collector keeps that distinction visible.
+  </p>
+
+  <h2>8. Polling, timeouts and quality</h2>
+  <p>
+    A Modbus device answers when asked. The collector polls a block of registers,
+    waits for an answer, and moves on. The important behaviours are:
+  </p>
+  <ul>
+    <li><strong>Block reads.</strong> Ask for a contiguous range once, not one register per request.</li>
+    <li><strong>Timeout.</strong> A missing answer is a failure, not a zero.</li>
+    <li><strong>Retries with backoff.</strong> Do not hammer a device that is rebooting.</li>
+    <li><strong>Quality.</strong> A timeout or exception produces <code>quality: bad</code>; a stale last value is not passed off as fresh.</li>
+    <li><strong>Counters.</strong> Every failure is counted so support can see it.</li>
+  </ul>
+  <p>
+    Polling too fast can overload a small inverter or serial bus. Polling too slowly
+    misses short events. The point map should make cadence explicit and reviewable.
+  </p>
+
+  <h2>9. OPC UA in one page</h2>
+  <p>
+    <strong>OPC UA</strong> is a richer industrial protocol. Instead of raw registers,
+    a server exposes a structured address space of <strong>nodes</strong>. A node has
+    a node ID, a data type, a value, a timestamp and a quality/status code.
+  </p>
+  <table>
+    <thead><tr><th>Concept</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Endpoint</td><td>A URL such as <code>opc.tcp://192.0.2.10:4840</code></td></tr>
+      <tr><td>Node ID</td><td>The address of one value, e.g. <code>ns=2;s=Inverter1.Power</code></td></tr>
+      <tr><td>Session</td><td>A secured, stateful connection to the server</td></tr>
+      <tr><td>Subscription</td><td>The server sends changes instead of the client polling every value</td></tr>
+      <tr><td>StatusCode</td><td>Good, uncertain or bad, with a reason</td></tr>
+      <tr><td>Security</td><td>Certificates, signing and encryption are part of the protocol</td></tr>
+    </tbody>
+  </table>
+  <p>
+    OPC UA is not “better Modbus”. It is a different trade-off: more structure and
+    security, more configuration, and usually a heavier server. A site may expose
+    both.
+  </p>
+
+  <h2>10. MQTT is not a fieldbus</h2>
+  <p>
+    <strong>MQTT</strong> is a publish/subscribe protocol built around a broker.
+    Devices publish to <strong>topics</strong>; subscribers receive messages that
+    match a topic filter. It is excellent for the northbound path and for gateways
+    that already aggregate data.
+  </p>
+  <table>
+    <thead><tr><th>Concept</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Broker</td><td>The server that receives and distributes messages</td></tr>
+      <tr><td>Topic</td><td>A hierarchical address such as <code>edge/site-1/inverter-1/telemetry</code></td></tr>
+      <tr><td>QoS 0/1/2</td><td>At most once / at least once / exactly once delivery semantics</td></tr>
+      <tr><td>Retained message</td><td>The broker keeps the last message so a new subscriber sees it</td></tr>
+      <tr><td>Last Will</td><td>A message the broker publishes if the client disappears</td></tr>
+    </tbody>
+  </table>
+  <p>
+    MQTT does not define registers, coils, node IDs or units. Those still have to be
+    mapped. It is a transport for already-structured data.
+  </p>
+
+  <h2>11. Where the gateway fits</h2>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>Southbound</h3>
+      <p>Modbus RTU/TCP, OPC UA, IEC 60870-5-104, DNP3, REST. The gateway is a client or master. It polls, browses or subscribes and normalises the answers.</p>
+    </div>
+    <div class="tile">
+      <h3>Northbound</h3>
+      <p>MQTT over TLS to IoT Core, usually through Greengrass. The gateway is a publisher. It batches, spools and sends.</p>
+    </div>
+  </div>
+  <p>
+    A <strong>PLC</strong> controls equipment. A <strong>SCADA</strong> system supervises
+    the plant. A <strong>historian</strong> stores time-series history. A
+    <strong>gateway</strong> moves data between OT and IT. They are different jobs;
+    one box may do more than one.
+  </p>
+
+  <h2>12. A solar example, without invented addresses</h2>
+  <table>
+    <thead><tr><th>Physical measurement</th><th>Likely Modbus concept</th><th>What the map must say</th></tr></thead>
+    <tbody>
+      <tr><td>AC power</td><td>Holding or input register, 16 or 32 bit</td><td>Function, address, signedness, scale, unit, word order</td></tr>
+      <tr><td>Daily energy</td><td>Two or four registers</td><td>Type, scale, unit, rollover behaviour</td></tr>
+      <tr><td>Inverter state</td><td>Enum or bitfield</td><td>Value meanings and mapping to quality/status</td></tr>
+      <tr><td>Fault code</td><td>Enum or bitfield</td><td>Vendor code table; do not guess</td></tr>
+      <tr><td>Irradiance</td><td>Weather station register</td><td>Scale, unit, mounting/calibration notes</td></tr>
+      <tr><td>Export power</td><td>Revenue meter register</td><td>Sign convention, scale, unit, meter multiplier</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The addresses are deliberately absent. They come from the vendor document or a
+    captured trace, never from a generic example.
+  </p>
+
+  <h2>13. What to ask the vendor</h2>
+  <ul class="checklist">
+    <li>Which protocol and physical layer: Modbus RTU, Modbus TCP, OPC UA, other?</li>
+    <li>For Modbus: unit/slave ID, IP/port or serial settings, and the register map.</li>
+    <li>Address convention: reference number or zero-based offset?</li>
+    <li>Function code and data type for every point.</li>
+    <li>Byte order and word order; signed or unsigned; float or integer.</li>
+    <li>Scale, offset, unit and rollover behaviour.</li>
+    <li>Which points are mandatory, which are optional, and how often they change.</li>
+    <li>A known-good value or capture to prove the interpretation.</li>
+    <li>Whether writes are needed; v1 is read-only.</li>
+    <li>Any gateway, firewall, connection limit or serial isolation requirement.</li>
+  </ul>
+
+  <h2>14. Common beginner mistakes</h2>
+  <table>
+    <thead><tr><th>Mistake</th><th>What it looks like</th><th>How to avoid it</th></tr></thead>
+    <tbody>
+      <tr><td>Using 40001 as the wire address</td><td>Illegal data address, or the wrong value</td><td>Record the convention explicitly</td></tr>
+      <tr><td>Wrong word order</td><td>Huge, tiny or changing nonsense</td><td>Prove with a known value</td></tr>
+      <tr><td>Wrong unit ID</td><td>Timeout on a busy bus</td><td>Confirm the slave ID and scan carefully</td></tr>
+      <tr><td>A/B swapped</td><td>No response at all; even the first device fails</td><td>Check wiring and try the swap</td></tr>
+      <tr><td>No termination</td><td>Intermittent CRC errors on a long bus</td><td>Terminate both ends correctly</td></tr>
+      <tr><td>Polling too fast</td><td>Timeouts under load; device reboots</td><td>Respect device limits; use block reads</td></tr>
+      <tr><td>Treating timeout as zero</td><td>Plausible but false generation data</td><td>Publish bad quality and count the failure</td></tr>
+      <tr><td>Hard-coding addresses</td><td>A new site needs a code change</td><td>Use the point map</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Where to go next</h2>
+  <p>
+    Read <a href="01-problem.html">Part 1 — the problem</a> for why this matters to a
+    solar site, then <a href="02-design.html">Part 2 — the design</a> for how the
+    collector fits around these fundamentals. The first concrete scope is
+    <a href="../solar-modbus-scope.md">Solar + Modbus TCP</a>.
+  </p>
+
+  <nav class="book-nav">
+    <a href="index.html">← Contents</a>
+    <a class="next" href="01-problem.html">Part 1 — The problem →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Primer · <a href="index.html">Contents</a></footer>
+</body>
+</html>
