@@ -1,0 +1,23 @@
+{
+  "logsUploaderConfiguration": {
+    "systemLogsConfiguration": {
+      "uploadToCloudWatch": "true",
+      "minimumLogLevel": "INFO",
+      "diskSpaceLimit": "20",
+      "diskSpaceLimitUnit": "MB",
+      "deleteLogFileAfterCloudUpload": "false"
+    },
+    "componentLogsConfigurationMap": {
+      "io.github.doudouba0309.EdgePlatform.Collector": {
+        "minimumLogLevel": "INFO",
+        "diskSpaceLimit": "50",
+        "diskSpaceLimitUnit": "MB",
+        "deleteLogFileAfterCloudUpload": "false",
+        "logFileDirectoryPath": "/greengrass/v2/work/io.github.doudouba0309.EdgePlatform.Collector",
+        "logFileRegex": "collector\\.jsonl.*"
+      }
+    }
+  },
+  "periodicUploadIntervalSec": "30",
+  "deprecatedVersionSupport": "false"
+}

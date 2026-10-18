@@ -1,11 +1,11 @@
 # Deep Review — 18 October 2026
 
 > **Resolution update (later 18 October):** R-01, R-02, R-04, R-06, R-08, R-10,
-> R-11, R-12, R-13 and R-14 were fixed and validated. R-05 now carries
-> `expires_at`/staleness fields but still needs a cloud-side alarm. R-03
-> (CloudWatch/tunnel/upload) and R-07 (image size) remain infrastructure
-> decisions; R-09 (teardown) is intentionally not executed without explicit
-> confirmation. See the latest section at the end of this report.
+> R-11, R-12, R-13 and R-14 were fixed and validated. R-03 now has live
+> CloudWatch log shipping plus support-upload and tunnel scripts; R-05 has a
+> live heartbeat metric/alarm; R-07 is an accepted test-core trade-off with a
+> separate production target; R-09 is the only intentionally unexecuted
+> destructive action. See the latest section at the end of this report.
 
 - **Scope:** current `main` at `bce4127`, component `1.0.7`, live AWS sandbox, 141 tests.
 - **Method:** source review, test review, live AWS inspection, documentation cross-check, targeted probes for redaction/status/versions.
@@ -283,19 +283,19 @@ No production claim is justified until R-01, R-02, R-03 and R-05 are addressed.
 | Finding | Status | Evidence |
 |---|---|---|
 | R-01 redaction | **Fixed** | Authorization/Proxy-Authorization/Bearer/API-key probes now redact the full value; tests added. |
-| R-02 version identity | **Fixed** | Live 1.0.8 status reports `version: 1.0.8` and `package_version: 0.1.0`; logs and support manifest carry component version. |
-| R-03 remote support | **Deferred** | Requires CloudWatch/log-upload/tunnel infrastructure and client approval; not silently implemented. |
+| R-02 version identity | **Fixed** | Live 1.0.9 status reports `version: 1.0.9` and `package_version: 0.1.0`; logs and support manifest carry component version. |
+| R-03 remote support | **Mostly fixed** | LogManager 2.3.14 ships collector/system logs to CloudWatch; upload and tunnel scripts documented. A shell is still not exposed by default. |
 | R-04 duplicate status | **Fixed** | Image smoke now has exactly 2 JSON status records (online/offline), one owner. |
-| R-05 stale online | **Partially fixed** | Heartbeats now carry `heartbeat_interval_s`, `stale_after_s` and `expires_at`; cloud alarm still required. |
-| R-06 wheelhouse | **Fixed for versions** | `deploy/greengrass/component-requirements.txt` exact pins; hashes remain a future supply-chain step. |
-| R-07 image size | **Deferred** | 601 MB nucleus remains; production base composition/trimming is a separate decision. |
-| R-08 stale docs | **Fixed** | Current references updated to 1.0.8/145 tests; historical 1.0.4 proof labeled historical. |
-| R-09 AWS cleanup | **Deferred** | Live sandbox retained for inspection; teardown is destructive and needs confirmation. |
+| R-05 stale online | **Fixed** | Heartbeats carry expiry; CloudWatch metric filter and 5-minute alarm `edge-platform-sandbox-heartbeat-missing` are live. |
+| R-06 wheelhouse | **Fixed** | `deploy/greengrass/component-requirements.lock` pins versions and SHA-256 hashes; build uses `--require-hashes`. |
+| R-07 image size | **Accepted trade-off** | 601 MB test core accepted in `0004-image-size.md`; production base still targets ~400 MB. |
+| R-08 stale docs | **Fixed** | Current references updated to 1.0.9/145 tests; historical 1.0.4 proof labeled historical. |
+| R-09 AWS cleanup | **Not executed** | Sandbox retained because teardown would destroy the live evidence; requires the explicit destructive step. |
 | R-10 client-id guard | **Fixed** | `MqttSink` rejects a client id mismatch on an AWS IoT host. |
 | R-11 test gaps | **Mostly fixed** | 145 tests; redaction, version, status failure, LWT, client-id and requirements tests added. |
 | R-12 status counters | **Fixed** | `/stats` now exposes status sent/failed/last_error. |
 | R-13 decision record | **Fixed** | `docs/decisions/0003-supportability.md` added. |
 | R-14 bundle tail | **Fixed** | Support bundle seeks to the last 1 MB instead of reading the whole log. |
 
-Live component: **1.0.8** deployed and RUNNING; telemetry and `version: 1.0.8`
+Live component: **1.0.9** deployed and RUNNING; telemetry and `version: 1.0.9`
 heartbeat observed in AWS. CI and security are re-run after this commit.

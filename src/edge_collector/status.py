@@ -123,3 +123,4 @@ class StatusReporter:
         else:
             self.sent += 1
             self.last_error = None
+            log.info("status published: %s", event)
