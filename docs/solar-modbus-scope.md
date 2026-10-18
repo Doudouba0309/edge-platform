@@ -1,6 +1,6 @@
 # Phase 1 Scope — Solar + Modbus TCP
 
-**Status:** agreed starting slice  
+**Status:** agreed starting slice
 **Source:** Aboitiz SOW, data-collection sections only. The SOW’s architecture,
 IoT-platform, lakehouse and enterprise-platform requirements are explicitly out
 of scope.
