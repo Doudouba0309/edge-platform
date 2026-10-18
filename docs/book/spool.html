@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep dive — The spool | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="00-primer.html">Primer</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Deep dive · the outbox that survives a power cut</p>
+  <h1>The spool: an outbox that survives a power cut</h1>
+  <p class="lede">
+    The queue protects memory. The spool protects data across a crash, a power cut
+    or a long uplink outage. It is deliberately small, boring and durable.
+  </p>
+
+  <div class="callout">
+    <strong>The promise.</strong>
+    Once a batch is accepted into the spool, it survives a process restart and is
+    replayed oldest-first when the sink returns. The collector may duplicate a batch
+    after a crash; it must not silently lose one.
+  </div>
+
+  <h2>Why not keep everything in memory?</h2>
+  <p>
+    The in-memory queue is bounded. If the internet is down for six hours, a queue
+    of a few thousand samples cannot hold the data. RAM is also the first thing lost
+    in a power cut.
+  </p>
+  <p>
+    The spool writes each batch to local disk as a SQLite row. SQLite in WAL mode is
+    crash-safe, needs no extra service, and is well understood on small Linux
+    devices.
+  </p>
+
+  <h2>The lifecycle</h2>
+  <ol>
+    <li>The pipeline builds a <code>Batch</code>.</li>
+    <li>The sink is available and the spool is empty: send directly.</li>
+    <li>The sink is unavailable or a backlog exists: append the batch to the spool.</li>
+    <li>The replay loop reads the oldest rows, sends them, and deletes only the rows
+        that were successfully sent.</li>
+    <li>New batches queue behind any existing backlog. Nothing overtakes it.</li>
+  </ol>
+
+  <h2>The database</h2>
+  <pre><code>CREATE TABLE spool (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at REAL    NOT NULL,
+    payload    BLOB    NOT NULL
+);
+
+CREATE INDEX spool_created_at ON spool (created_at);</code></pre>
+  <p>
+    <code>id</code> is the FIFO order. <code>created_at</code> is diagnostic.
+    <code>payload</code> is the exact JSON batch bytes, not a Python object. The
+    schema is intentionally tiny.
+  </p>
+
+  <h2>Power-cut behaviour</h2>
+  <table>
+    <thead><tr><th>Event</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>Process crash</td><td>Committed rows remain; replay resumes on next start.</td></tr>
+      <tr><td>Power cut</td><td>WAL recovery restores committed rows. The last few uncommitted writes may be lost; that is the normal durability boundary.</td></tr>
+      <tr><td>Crash after send, before delete</td><td>The batch may be sent again. This is at-least-once, not exactly-once.</td></tr>
+      <tr><td>Corrupt payload</td><td>The row is dropped, counted as <code>spool_corrupt_dropped</code>, and the rest continues.</td></tr>
+      <tr><td>Disk full</td><td>Append fails; the batch is counted as lost and the error is logged.</td></tr>
+      <tr><td>Old backlog</td><td>Oldest payloads are purged to stay under the byte budget.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The budget is bytes, not file size</h2>
+  <p>
+    SQLite does not return freed pages to the filesystem promptly. A file-size
+    budget would delete a huge amount of data while the file still looked large.
+    The spool therefore measures the sum of payload bytes.
+  </p>
+  <ul>
+    <li><code>spool.max_bytes</code> is the payload budget.</li>
+    <li>Enforcement starts only when buffered bytes exceed the budget.</li>
+    <li>It deletes oldest rows until buffered bytes are below 90% of the budget.</li>
+    <li>It reclaims pages with <code>PRAGMA incremental_vacuum</code>.</li>
+    <li>If a single payload exceeds the budget, it is not reported as stored.</li>
+  </ul>
+
+  <h2>Ordering</h2>
+  <p>
+    The spool is the strongest ordering guarantee in the system. Once a row exists,
+    new batches append behind it. The replay loop selects oldest first. The queue
+    order is not a guarantee; the spool order is.
+  </p>
+  <p>
+    Batches are per device. Ordering is preserved within a device; different devices
+    may be flushed in sorted device order.
+  </p>
+
+  <h2>Threading</h2>
+  <p>
+    The pipeline runs on an asyncio loop, but SQLite calls are blocking. They run in
+    worker threads. The connection uses <code>check_same_thread=False</code> and every
+    operation is serialised behind an <code>RLock</code>. This is not optional; SQLite
+    connections are thread-affine.
+  </p>
+
+  <h2>Metrics and evidence</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>spooled</code></td><td>Batches appended to the spool.</td></tr>
+      <tr><td><code>replayed</code></td><td>Batches successfully sent from the backlog.</td></tr>
+      <tr><td><code>spool_pending</code></td><td>Rows currently waiting.</td></tr>
+      <tr><td><code>spool_corrupt_dropped</code></td><td>Rows that could not be decoded.</td></tr>
+      <tr><td><code>spool_enabled</code></td><td>Whether disk buffering is on.</td></tr>
+      <tr><td><code>dropped_unsendable</code></td><td>Batches lost because neither the sink nor the spool accepted them.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    A support bundle includes the spool summary, not the full payload history.
+  </p>
+
+  <h2>What the spool does not solve</h2>
+  <ul>
+    <li>It does not create disk space; a full disk still loses data.</li>
+    <li>It does not guarantee exactly-once delivery; retries may duplicate.</li>
+    <li>It does not sync to a second disk; a failed flash device can lose everything.</li>
+    <li>It does not replace a database or a data lake; it is a bounded outbox.</li>
+    <li>It does not preserve data if the process is killed before a row is committed.</li>
+  </ul>
+
+  <h2>Tests that pin the behaviour</h2>
+  <ul class="checklist">
+    <li>Append, peek, delete and count.</li>
+    <li>Budget drops oldest payloads and never reports an oversized batch as stored.</li>
+    <li>Spool survives close/open.</li>
+    <li>Startup reports an existing backlog.</li>
+    <li>Replay sends oldest first.</li>
+    <li>A corrupt row is dropped and counted.</li>
+    <li>Sink failure spools, then replays.</li>
+    <li>WAL mode is enabled.</li>
+  </ul>
+
+  <p>
+    Read the design context in <a href="02-design.html">Part 2</a> or the implementation
+    source in <code>src/edge_collector/spool.py</code>.
+  </p>
+
+  <nav class="book-nav">
+    <a href="index.html">← Contents</a>
+    <a class="next" href="03-built.html">Part 3 — What was built →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Spool deep dive · <a href="index.html">Contents</a></footer>
+</body>
+</html>

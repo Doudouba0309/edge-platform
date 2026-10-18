@@ -15,6 +15,11 @@ Client and site names never appear in component names; they belong in
 configuration, thing groups and deployment names. Revisit this prefix before the
 first real client publish if a company domain is adopted.
 
+This is a **sandbox placeholder**. Before client delivery, choose a client-owned
+namespace and publish a new component family/version; do not edit a published
+version. Git ownership, AWS account and namespace migration are covered in
+[`docs/environment-portability.md`](../environment-portability.md).
+
 ## Q13 — component execution mode
 
 Components run in process mode (`NoContainer`). No Docker or overlay

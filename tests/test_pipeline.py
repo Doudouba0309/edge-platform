@@ -360,3 +360,7 @@ def _batch_payload() -> bytes:
         samples=[_sample()],
     )
     return batch.to_json()
+
+
+def test_default_overflow_policy_is_drop_oldest() -> None:
+    assert BatchingConfig().overflow_policy == "drop_oldest"

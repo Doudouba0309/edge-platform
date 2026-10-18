@@ -57,7 +57,7 @@
     <tbody>
       <tr><td><code>make install</code></td><td>Creates the virtual environment and installs dependencies.</td><td>uv</td></tr>
       <tr><td><code>make hooks</code></td><td>Installs the pre-commit secret hook.</td><td>pre-commit (installed by <code>make install</code>)</td></tr>
-      <tr><td><code>make check</code></td><td>Ruff, mypy, 149 tests and the secret guard.</td><td>Nothing else</td></tr>
+      <tr><td><code>make check</code></td><td>Ruff, mypy, 150 tests and the secret guard.</td><td>Nothing else</td></tr>
       <tr><td><code>make verify</code></td><td>Check plus local mTLS, outage, replay, RSS and SIGTERM.</td><td>Docker + Mosquitto clients</td></tr>
       <tr><td><code>make smoke</code></td><td>Builds and boots both Tier 1 collector images.</td><td>Docker</td></tr>
       <tr><td><code>PLATFORMS=linux/arm64 make smoke</code></td><td>Faster single-architecture image test.</td><td>Docker</td></tr>
@@ -120,7 +120,7 @@
       <tr><td><code>batching.max_samples</code></td><td>Flush when this many samples are buffered.</td></tr>
       <tr><td><code>batching.flush_interval_s</code></td><td>Flush when this much time has passed, even below <code>max_samples</code>.</td></tr>
       <tr><td><code>batching.queue_max</code></td><td>Maximum samples waiting in memory.</td></tr>
-      <tr><td><code>batching.overflow_policy</code></td><td><code>drop_oldest</code> or <code>drop_newest</code>.</td></tr>
+      <tr><td><code>batching.overflow_policy</code></td><td><code>drop_oldest</code> (default) or <code>drop_newest</code>.</td></tr>
       <tr><td><code>spool.enabled</code></td><td>Turns the disk outbox on or off.</td></tr>
       <tr><td><code>spool.max_bytes</code></td><td>Payload-byte budget, not file size.</td></tr>
       <tr><td><code>sources.synthetic.enabled</code></td><td>Uses the pretend sensor until real adapters arrive.</td></tr>

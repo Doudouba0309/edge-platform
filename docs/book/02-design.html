@@ -166,8 +166,10 @@ edge/&lt;gateway_id&gt;/status</code></pre>
   <h3>A bounded queue</h3>
   <p>
     The queue has <code>queue_max</code> slots. If the sink is slower than the
-    source, the queue eventually fills. The configured policy is
-    <code>drop_oldest</code> or <code>drop_newest</code>; both are counted loudly.
+    source, the queue eventually fills. The shipped default — and the default in
+    all three configs — is <strong><code>drop_oldest</code></strong>. When full, the
+    oldest queued sample is removed, the newest is retained, and the loss is counted
+    in <code>dropped_queue_full</code>. <code>drop_newest</code> is an explicit opt-in.
     There is deliberately no “block” policy, because a sensor callback must never
     stall the whole gateway.
   </p>
@@ -262,10 +264,12 @@ edge/&lt;gateway_id&gt;/status</code></pre>
 
   <h3>Why the component namespace matters</h3>
   <p>
-    Components live under <code>io.github.doudouba0309.EdgePlatform</code>. Client
-    and site names belong in configuration, thing groups and deployment names, not
-    in component names. Otherwise every customer would need a different component
-    identity for the same code.
+    Components live under <code>io.github.doudouba0309.EdgePlatform</code>. That
+    namespace is a sandbox placeholder tied to the current Git owner, not a
+    technical dependency. Client and site names belong in configuration, thing
+    groups and deployment names, not in component names. Before a client deploy,
+    change to a client-owned namespace as a new component family and version; see
+    <a href="../environment-portability.md">Environment Portability</a>.
   </p>
 
   <h2>Security design, in one page</h2>

@@ -71,6 +71,31 @@ adopted.
 **Execution mode.** Components run in process mode (`NoContainer`); the
 collector is a normal Linux process, not a nested container.
 
+## Environment identity and client handover
+
+The current values are **sandbox only**:
+
+- component namespace `io.github.doudouba0309.EdgePlatform`
+- AWS account `632839730725`, profile `edge-platform-admin`, region `ap-southeast-1`
+- bucket, thing, group, TES role, SNS and log names prefixed `edge-platform-sandbox`
+
+Git ownership and the Greengrass component namespace are independent. The current
+namespace is a placeholder tied to the personal Git owner, not a technical
+dependency. Before a client deployment, read
+[`docs/environment-portability.md`](docs/environment-portability.md) and:
+
+- move the repository to the client’s Git organization;
+- choose a client-owned reverse-DNS component namespace;
+- publish a **new component family/version** — never edit a published version;
+- use the client AWS account/profile, bucket, thing, role, SNS and log names;
+- update `deploy/greengrass/logmanager-config.json`, tests, scripts and docs in the
+  same change;
+- never use a personal AWS account, personal root user or personal credentials for
+  client work.
+
+Do not perform the actual namespace or account migration without the client’s
+identity and explicit approval.
+
 ## Adapters
 
 **Declarative first.** Prefer a point map over code. A code adapter is the
@@ -118,8 +143,10 @@ Violating these breaks the build, leaks credentials, or silently corrupts data.
   whichever comes first. There is no third trigger.
 - **Ordering**: once anything is in the spool, new batches queue *behind* it.
   Nothing overtakes the backlog. This is the strongest guarantee in the codebase.
-- **Overflow**: `drop_oldest` or `drop_newest`. There is deliberately no `block`
-  policy — a synchronous `emit` cannot block safely.
+- **Overflow**: **`drop_oldest` is the default and the shipped configuration**; when
+  the queue is full, the oldest queued sample is discarded, the newest is retained,
+  and the loss is counted. `drop_newest` is an explicit opt-in. There is deliberately
+  no `block` policy — a synchronous `emit` cannot block safely.
 - **Quality**: `good | uncertain | bad | stale`, mapped from OPC UA `StatusCode`.
 - **`filtered` is not `dropped`.** `filtered` counts values suppressed on purpose
   (OPC UA deadband). `dropped` counts genuine loss. Never conflate them in output

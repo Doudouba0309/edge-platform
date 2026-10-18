@@ -78,7 +78,7 @@
 
 <div class="state">
   <div class="tile"><b>1.0.10</b><span>live collector component</span></div>
-  <div class="tile"><b>149 tests</b><span>code, contract and supportability</span></div>
+  <div class="tile"><b>150 tests</b><span>code, contract and supportability</span></div>
   <div class="tile"><b>Evidence-only</b><span>remote access policy for v1</span></div>
   <div class="tile"><b>SNS confirmed</b><span>heartbeat alarm delivery</span></div>
   <div class="tile"><b>Solar + Modbus TCP</b><span>Phase 1 target</span></div>
@@ -133,6 +133,16 @@
     <h3><a href="book/00-primer.html">Hardware and Protocol Primer</a></h3>
     <p>Newcomer primer: wiring, RS-485, Modbus RTU/TCP, registers, word order, OPC UA, MQTT and vendor checklists.</p>
     <div class="meta"><span class="badge current">Current</span><span class="audience">Newcomer · engineer</span></div>
+  </article>
+  <article class="doc-card" data-search="gateway slave device modbus hierarchy identity proposal">
+    <h3><a href="proposals/gateway-slave-device.md">Gateway / Slave / Device Proposal</a></h3>
+    <p>Proposed hierarchy, identity rules, point-map shape, topic mapping and failure behaviour.</p>
+    <div class="meta"><span class="badge decision">Proposal</span><span class="audience">Architect · engineer</span></div>
+  </article>
+  <article class="doc-card" data-search="spool outbox power cut wal sqlite replay budget">
+    <h3><a href="book/spool.html">Spool Deep Dive</a></h3>
+    <p>Why the outbox survives power loss, how WAL and replay work, and what it does not guarantee.</p>
+    <div class="meta"><span class="badge current">Current</span><span class="audience">Engineer · operator</span></div>
   </article>
   <article class="doc-card" data-search="design architecture contract sample batch pipeline spool sinks">
     <h3><a href="book/02-design.html">Design</a></h3>
@@ -224,6 +234,16 @@
     <p>CloudWatch log groups, heartbeat alarm, SNS, support-bundle upload and the opt-in tunnel runbook.</p>
     <div class="meta"><span class="badge runbook">Runbook</span><span class="audience">Support · operator</span></div>
   </article>
+  <article class="doc-card" data-search="environment portability client handover namespace aws account migration">
+    <h3><a href="environment-portability.md">Environment Portability</a></h3>
+    <p>Sandbox-to-client migration for Git, component namespace, AWS account, names and credentials.</p>
+    <div class="meta"><span class="badge runbook">Runbook</span><span class="audience">Lead · engineer</span></div>
+  </article>
+  <article class="doc-card" data-search="test agent helper review map context">
+    <h3><a href="../test-agent-helper.md">Test Agent Helper</a></h3>
+    <p>A one-page orientation map for another review agent or session.</p>
+    <div class="meta"><span class="badge current">Reference</span><span class="audience">Reviewer</span></div>
+  </article>
   <article class="doc-card" data-search="release readiness operational pilot blockers">
     <h3><a href="release-readiness.md">Release Readiness</a></h3>
     <p>The current operational gate: what passed, what is blocked and what must happen before a pilot.</p>
@@ -270,7 +290,7 @@
 </div>
 
 <footer>
-  <span>Last reviewed: 18 October 2026 · component 1.0.10 · 149 tests</span>
+  <span>Last reviewed: 18 October 2026 · component 1.0.10 · 150 tests</span>
   <span><a href="../README.md">Repository root</a></span>
 </footer>
 
