@@ -2,6 +2,7 @@
 
 - **Snapshot:** 18 October 2026
 - **Current live state:** component `1.0.10` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 149 tests pass.
+- **Phase 1 target:** Solar + Modbus TCP, starting with a local surrogate. See [Solar + Modbus TCP Scope](solar-modbus-scope.md).
 - **Purpose:** list the decisions needed from the point-map contract onward, with a recommended default for each.
 
 ## How to use this
@@ -79,7 +80,7 @@ If not, reply with the decision IDs, for example: **“D1 JSON, D4 add uint32, D
 
 | ID | Decision | Options | Recommendation | Why / impact | Needed |
 |---|---|---|---|---|---|
-| D37 | Protocols in v1 | Modbus TCP / + RTU / + OPC UA | **Modbus TCP first, RTU second, OPC UA after** | Each protocol needs a surrogate and HIL; one at a time is honest. | Must decide now |
+| D37 | Protocols in v1 | Modbus TCP / + RTU / + OPC UA | **Solar + Modbus TCP first, RTU second, OPC UA after** | Each protocol needs a surrogate and HIL; one at a time is honest. | Decided |
 | D38 | Client test participation | None / remote / on-site | **Remote staging first; on-site/HIL for the final gate** | The client is in another country; design the evidence loop before shipping. | Client input |
 | D39 | Acceptance tests | Unit only / bench + 24h soak | **Bench, 24h soak, network loss, power loss, disk-full, restart** | A gateway that works for five minutes is not v1. | Before v1 |
 | D40 | Production security review | Skip / internal / client-led | **Client-led review before any production certificate** | Remote access and data residency need approval. | Before v1 |
@@ -98,7 +99,7 @@ If you want to move quickly, approve this set:
 - RTU: `pymodbus` RTU + `pyserial`, configurable serial, PTY surrogate then mandatory USB-RS485 HIL.
 - Support: CloudWatch 30 days, local 7 days, support bundle to S3 presigned, no inbound SSH, AWS IoT Secure Tunneling only, audited.
 - AWS: tear down the current sandbox after proof, then script provisioning with tags.
-- V1: Modbus TCP then RTU, one pilot site, arm64 live proof, 24h soak and failure tests before shipping.
+- V1: Solar + Modbus TCP first, then RTU, one pilot site, arm64 live proof, 24h soak and failure tests before shipping.
 
 ## What I will not do without a decision
 

@@ -100,7 +100,7 @@
     <thead><tr><th>Phase</th><th>What it delivers</th><th>State</th></tr></thead>
     <tbody>
       <tr><td><strong>0 — Base and pipeline</strong></td><td>Frozen contract, image, two-architecture CI, spool, health, nucleus, component package.</td><td><span class="pill">Mostly done</span></td></tr>
-      <tr><td><strong>1 — Declarative engine</strong></td><td>Point-map schema, Modbus TCP, OPC UA, validation before deployment.</td><td><span class="pill warn">Next</span></td></tr>
+      <tr><td><strong>1 — Declarative engine</strong></td><td>Point-map schema, Solar + Modbus TCP (surrogate first), then OPC UA/RTU, validation before deployment.</td><td><span class="pill warn">Next</span></td></tr>
       <tr><td><strong>2 — Adapter kit and conformance</strong></td><td>Source contract, surrogates, fixtures and a machine-readable conformance report.</td><td><span class="pill warn">Not started</span></td></tr>
       <tr><td><strong>3 — Agent factory</strong></td><td>Skills, context layers, subagent contracts, provenance.</td><td><span class="pill warn">Not started</span></td></tr>
       <tr><td><strong>4 — Fleet operations</strong></td><td>Rollout, rollback, patch cadence, provenance ledger and field signals.</td><td><span class="pill warn">Not started</span></td></tr>
@@ -110,10 +110,10 @@
   <h2>Recommended next step</h2>
   <div class="callout ok">
     <strong>Finish the base, then make it useful on a factory floor.</strong>
-    The next build task should be the declarative point-map engine and the Modbus
-    TCP source, with a surrogate and fixtures. That is the shortest path from
-    “pretend sensor” to “a controls engineer can map a real PLC without writing
-    code”.
+    The next build task should be the declarative point-map engine and the
+    <strong>Solar + Modbus TCP</strong> source, with a surrogate and fixtures.
+    That is the shortest path from “pretend sensor” to “a controls engineer can
+    map a real inverter without writing code”.
   </div>
 
   <h3>Before Phase 1</h3>
@@ -138,9 +138,9 @@
     Not “another AWS message”. The next real milestone is:
   </p>
   <blockquote>
-    A controls engineer writes one point-map file for a simulated Modbus or OPC UA
-    device, deploys the collector without changing the image or writing Python,
-    and a schema-valid batch appears in AWS.
+    A controls engineer writes one point-map file for a simulated solar inverter on
+    Modbus TCP, deploys the collector without changing the image or writing
+    Python, and a schema-valid batch appears in AWS.
   </blockquote>
   <p>
     At that point the platform has crossed from “the pipe works” to “a site can
@@ -155,7 +155,7 @@
       <tr><td>Can it read a real PLC today?</td><td>No. The protocol adapters are the next phase.</td></tr>
       <tr><td>Is it production-ready?</td><td>No. It is a sandbox proof with a solid northbound base.</td></tr>
       <tr><td>Is the architecture sound?</td><td>The frozen contract, bounded queue, spool, image/component split and no-credentials-in-component rule are deliberate and tested.</td></tr>
-      <tr><td>What should happen next?</td><td>Keep the sandbox, then build Phase 1: point map + Modbus TCP + surrogate.</td></tr>
+      <tr><td>What should happen next?</td><td>Keep the sandbox, then build Phase 1: Solar + Modbus TCP + surrogate.</td></tr>
     </tbody>
   </table>
 

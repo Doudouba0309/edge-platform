@@ -81,7 +81,7 @@
   <div class="tile"><b>149 tests</b><span>code, contract and supportability</span></div>
   <div class="tile"><b>Evidence-only</b><span>remote access policy for v1</span></div>
   <div class="tile"><b>SNS confirmed</b><span>heartbeat alarm delivery</span></div>
-  <div class="tile"><b>Sandbox kept</b><span>for Phase 1</span></div>
+  <div class="tile"><b>Solar + Modbus TCP</b><span>Phase 1 target</span></div>
 </div>
 
 <div class="toolbar">
@@ -92,7 +92,7 @@
 <div class="paths">
   <div class="path"><h3>New to the project · 30 min</h3><p>Start with the <a href="book/01-problem.html">problem</a>, then <a href="book/02-design.html">design</a>, then <a href="book/07-status.html">status and roadmap</a>.</p></div>
   <div class="path"><h3>Operator · 15 min</h3><p>Read <a href="testing-validation.html">validation</a>, <a href="remote-support.md">remote support</a>, then the <a href="release-readiness.md">release checklist</a>.</p></div>
-  <div class="path"><h3>Engineer · 1 hour</h3><p>Design, <a href="component-packaging.md">component packaging</a>, <a href="decision-manifest.md">decision manifest</a>, and the <a href="reviews/2026-10-18-deep-review.md">deep review</a>.</p></div>
+  <div class="path"><h3>Engineer · 1 hour</h3><p>Design, <a href="solar-modbus-scope.md">Solar + Modbus TCP scope</a>, <a href="component-packaging.md">component packaging</a>, <a href="decision-manifest.md">decision manifest</a>, and the <a href="reviews/2026-10-18-deep-review.md">deep review</a>.</p></div>
   <div class="path"><h3>Rebuild · 2 hours</h3><p><a href="book/04-rebuild-local.html">Local rebuild</a>, <a href="book/05-rebuild-aws.html">AWS rebuild</a>, and <a href="aws-sandbox-setup.html">sandbox setup</a>.</p></div>
 </div>
 
@@ -124,6 +124,11 @@
 <h2>Design and architecture</h2>
 <p class="intro">Why the system is shaped this way, and what the frozen contract guarantees.</p>
 <div class="grid">
+  <article class="doc-card" data-search="solar modbus phase 1 scope inverter huawei weather meter">
+    <h3><a href="solar-modbus-scope.md">Solar + Modbus TCP Scope</a></h3>
+    <p>The agreed first slice: representative solar points, Modbus TCP rules, surrogate plan, acceptance criteria and client inputs.</p>
+    <div class="meta"><span class="badge decision">Phase 1</span><span class="audience">Engineer · controls</span></div>
+  </article>
   <article class="doc-card" data-search="design architecture contract sample batch pipeline spool sinks">
     <h3><a href="book/02-design.html">Design</a></h3>
     <p>The stack, northbound/southbound split, frozen contract, pipeline, spool, sinks, security and deliberate absences.</p>

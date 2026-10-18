@@ -48,8 +48,8 @@ One confirmation and several actions remain.
 ## Not applicable yet
 
 - Point-map validation.
-- Modbus TCP/RTU surrogate and HIL.
-- OPC UA.
+- Modbus TCP surrogate, HIL and the Solar first slice; see [Solar + Modbus TCP Scope](solar-modbus-scope.md).
+- Modbus RTU and OPC UA later.
 - Production base image (601 MB test core accepted; target ~400 MB).
 - Client security review.
 
