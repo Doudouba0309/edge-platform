@@ -4,6 +4,7 @@ This repository is the base image and adapter kit for edge gateways that collect
 
 Design documents live under `docs/`:
 
+- [Documentation Library](docs/index.html)
 - [Edge Platform Proposal](docs/edge-platform-proposal.html)
 
 Implementation decisions are recorded under [`docs/decisions/`](docs/decisions/).

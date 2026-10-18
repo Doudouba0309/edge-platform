@@ -26,7 +26,7 @@
   <table>
     <thead><tr><th>Area</th><th>Status</th><th>Evidence</th></tr></thead>
     <tbody>
-      <tr><td>Data contract</td><td><span class="pill">Done</span></td><td>Frozen JSON Schema; 147 tests.</td></tr>
+      <tr><td>Data contract</td><td><span class="pill">Done</span></td><td>Frozen JSON Schema; 149 tests.</td></tr>
       <tr><td>Collector runtime</td><td><span class="pill">Done</span></td><td>Batching, queue bounds, spool, health, graceful shutdown.</td></tr>
       <tr><td>Local mTLS and outage replay</td><td><span class="pill">Done</span></td><td><code>make verify</code> passes.</td></tr>
       <tr><td>Tier 1 images</td><td><span class="pill">Done</span></td><td>arm64 and x86_64 boot smoke passes.</td></tr>
@@ -46,7 +46,7 @@
   </p>
   <div class="grid-2">
     <div class="tile"><h3>Image</h3><p>Both Tier 1 images booted, published, stayed under the memory ceiling and stopped cleanly.</p></div>
-    <div class="tile"><h3>Collector</h3><p>147 tests, health 200/ready 200, mTLS, one batch spooled offline and replayed.</p></div>
+    <div class="tile"><h3>Collector</h3><p>149 tests, health 200/ready 200, mTLS, one batch spooled offline and replayed.</p></div>
     <div class="tile"><h3>AWS core</h3><p>Core <code>HEALTHY</code>, component 1.0.10 <code>RUNNING</code>.</p></div>
     <div class="tile"><h3>AWS data</h3><p>A schema-1.0 batch observed on the expected telemetry topic with quality <code>good</code>.</p></div>
   </div>

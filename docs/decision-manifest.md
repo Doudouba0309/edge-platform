@@ -1,7 +1,7 @@
 # Phase 1+ Decision Manifest
 
 - **Snapshot:** 18 October 2026
-- **Current live state:** component `1.0.10` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 147 tests pass.
+- **Current live state:** component `1.0.10` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 149 tests pass.
 - **Purpose:** list the decisions needed from the point-map contract onward, with a recommended default for each.
 
 ## How to use this

@@ -289,10 +289,10 @@ No production claim is justified until R-01, R-02, R-03 and R-05 are addressed.
 | R-05 stale online | **Fixed** | Heartbeats carry expiry; CloudWatch metric filter and 5-minute alarm `edge-platform-sandbox-heartbeat-missing` are live. |
 | R-06 wheelhouse | **Fixed** | `deploy/greengrass/component-requirements.lock` pins versions and SHA-256 hashes; build uses `--require-hashes`. |
 | R-07 image size | **Accepted trade-off** | 601 MB test core accepted in `0004-image-size.md`; production base still targets ~400 MB. |
-| R-08 stale docs | **Fixed** | Current references updated to 1.0.10/147 tests; historical 1.0.4 proof labeled historical. |
+| R-08 stale docs | **Fixed** | Current references updated to 1.0.10/149 tests; historical 1.0.4 proof labeled historical. |
 | R-09 AWS cleanup | **Not executed** | Sandbox retained because teardown would destroy the live evidence; requires the explicit destructive step. |
 | R-10 client-id guard | **Fixed** | `MqttSink` rejects a client id mismatch on an AWS IoT host. |
-| R-11 test gaps | **Mostly fixed** | 147 tests; redaction, version, status failure, LWT, client-id and requirements tests added. |
+| R-11 test gaps | **Mostly fixed** | 149 tests; redaction, version, status failure, LWT, client-id and requirements tests added. |
 | R-12 status counters | **Fixed** | `/stats` now exposes status sent/failed/last_error. |
 | R-13 decision record | **Fixed** | `docs/decisions/0003-supportability.md` added. |
 | R-14 bundle tail | **Fixed** | Support bundle seeks to the last 1 MB instead of reading the whole log. |
