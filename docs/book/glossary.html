@@ -25,7 +25,7 @@
   <table>
     <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
     <tbody>
-      <tr><td><strong>Adapter</strong></td><td>Software that speaks one factory protocol and turns its readings into the common <code>Sample</code> shape.</td></tr>
+      <tr><td><strong>Adapter</strong></td><td>Software that speaks one industrial protocol and turns its readings into the common <code>Sample</code> shape.</td></tr>
       <tr><td><strong>Agent</strong></td><td>An AI worker that can perform a scoped task in the repository, with rules and verification gates.</td></tr>
       <tr><td><strong>ARM64 / aarch64</strong></td><td>The processor family used by many small gateways, including Apple Silicon and Raspberry Pi. Greengrass reports it as <code>aarch64</code>.</td></tr>
       <tr><td><strong>AWS</strong></td><td>Amazon Web Services, the cloud provider that hosts IoT Core, S3, IAM and Greengrass management.</td></tr>
@@ -49,7 +49,7 @@
       <tr><td><strong>Device id</strong></td><td>The logical asset a reading belongs to, for example <code>plc-line-1</code>. It is a topic level, not a physical serial number.</td></tr>
       <tr><td><strong>Direct IoT Core</strong></td><td>A deployment where the collector itself connects to IoT Core with a client certificate, instead of going through the Greengrass nucleus. The MQTT sink can do this; it is not the preferred path.</td></tr>
       <tr><td><strong>Drop policy</strong></td><td>What to do when the memory queue is full: discard the oldest reading or the newest one. Counted, not silent.</td></tr>
-      <tr><td><strong>Edge</strong></td><td>The place near the factory equipment, where the gateway lives. “Edge computing” means processing data there rather than only in the cloud.</td></tr>
+      <tr><td><strong>Edge</strong></td><td>The place near the solar or industrial equipment, where the gateway lives. “Edge computing” means processing data there rather than only in the cloud.</td></tr>
       <tr><td><strong>Frozen</strong></td><td>Deliberately hard to change. A frozen contract can still be versioned, but not casually edited.</td></tr>
       <tr><td><strong>Gateway</strong></td><td>The computer at the edge. It runs the collector and the Greengrass nucleus.</td></tr>
       <tr><td><strong>Greengrass</strong></td><td>AWS IoT Greengrass V2: the software that manages components, identity, secure connection and offline behaviour on the gateway.</td></tr>

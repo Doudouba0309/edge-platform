@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Part 1 — The problem | Edge Platform Handbook</title>
+<title>Part 1 — The problem: solar data is trapped | Edge Platform Handbook</title>
 <link rel="stylesheet" href="book.css">
 </head>
 <body>
@@ -15,40 +15,54 @@
 
 <main class="page">
   <p class="chapter-label">Part 1</p>
-  <h1>The problem: factory data is trapped</h1>
+  <h1>The problem: solar data is trapped</h1>
   <p class="lede">
-    A factory already knows a great deal about itself. The trouble is getting that
-    knowledge out of the factory reliably, cheaply and without opening a hole in
+    A solar plant already knows a great deal about itself. The trouble is getting
+    that knowledge out of the site reliably, cheaply and without opening a hole in
     the plant network.
   </p>
-
-  <h2>Start with a real factory floor</h2>
   <p>
-    Picture a production line. A programmable logic controller (PLC) reads
-    temperature, pressure, motor speed and dozens of other values. A sensor may
-    report every second. Some equipment speaks <strong>Modbus</strong>, some speaks
-    <strong>OPC UA</strong>, some speaks plain <strong>MQTT</strong>. Vendors use
-    different names, units, register layouts and quirks.
+    The SOW covers 40 renewable-energy sites. This handbook starts with one solar
+    site and one protocol — Modbus TCP — because that is the shortest path to a
+    real inverter reading. The full first-slice scope is in
+    <a href="../solar-modbus-scope.md">Solar + Modbus TCP Scope</a>.
+  </p>
+
+  <h2>Start with a real solar site</h2>
+  <p>
+    Picture a solar plant. Inverters turn DC from the arrays into AC for the grid.
+    A weather station reports irradiance, ambient temperature and wind. A revenue
+    meter records export and import. A SCADA system or historian already collects
+    much of this, often through a programmable logic controller (PLC).
   </p>
   <p>
-    The people who run the line want dashboards, alerts and history in the cloud.
-    The people who protect the plant do not want the cloud to reach directly into
-    the control network. And the network itself is not perfect: cellular drops,
-    firewalls reboot, switches get unplugged, and maintenance windows happen.
+    The equipment is not uniform. One inverter exposes <strong>Modbus TCP</strong>
+    registers; another speaks <strong>OPC UA</strong>; a gateway may publish
+    <strong>MQTT</strong>. Vendors such as Huawei use different names, units,
+    register layouts and quirks. The useful measurements are concrete: AC and DC
+    power, energy yield, voltage, current, frequency, temperature, operating state
+    and fault codes.
+  </p>
+  <p>
+    The people who run the site want generation, availability, capacity factor and
+    inverter health in the cloud. The people who protect the plant do not want the
+    cloud to reach directly into the control network. And the network itself is not
+    perfect: cellular drops, firewalls reboot, switches get unplugged, and
+    maintenance windows happen.
   </p>
 
   <div class="callout">
     <strong>The central idea.</strong>
-    Put a small, dependable computer at the edge of the plant. Let it speak the
-    local protocols, translate everything into one shape, hold on to data when the
-    uplink is down, and send it north to AWS when it can.
+    Put a small, dependable computer at the edge of the solar site. Let it speak
+    the local protocols, translate everything into one shape, hold on to data when
+    the uplink is down, and send it north to AWS when it can.
   </div>
 
   <h2>Why not send every reading straight to AWS?</h2>
   <p>Three practical reasons:</p>
   <ol>
     <li><strong>Cost.</strong> AWS IoT Core charges per message. Sending one message per sensor reading is wasteful when you can send one carefully packed batch.</li>
-    <li><strong>Reliability.</strong> A factory link can disappear for minutes or hours. If the gateway does not buffer, the data is simply gone.</li>
+    <li><strong>Reliability.</strong> A site link can disappear for minutes or hours. If the gateway does not buffer, the data is simply gone.</li>
     <li><strong>Security and control.</strong> The cloud should not need a route into the plant control network. The gateway makes the outbound connection; nothing needs to connect inward.</li>
   </ol>
 
@@ -61,7 +75,7 @@
   <div class="grid-2">
     <div class="tile">
       <h3>1. Speak local protocols</h3>
-      <p>Read from PLCs and sensors using whatever they already speak. This is called the <strong>southbound</strong> side.</p>
+      <p>Read from inverters, meters, weather stations and PLCs using whatever they already speak. This is called the <strong>southbound</strong> side.</p>
     </div>
     <div class="tile">
       <h3>2. Normalise</h3>
@@ -104,7 +118,7 @@
       <tr><td>Two processor families must be supported.</td><td>Tier 1 is arm64 and x86_64. Both are built and smoke-tested.</td></tr>
       <tr><td>Devices may be untouched for years.</td><td>Few dependencies, a health endpoint with no framework, and an image with a pinned base.</td></tr>
       <tr><td>One image should serve many sites.</td><td>The image is generic. Site-specific protocol work belongs in a component or configuration, not in a new image.</td></tr>
-      <tr><td>The cloud must not hold the plant’s keys.</td><td>The component never stores AWS credentials. The nucleus owns the certificate and the connection.</td></tr>
+      <tr><td>The cloud must not hold the site’s keys.</td><td>The component never stores AWS credentials. The nucleus owns the certificate and the connection.</td></tr>
       <tr><td>Data must stay understandable.</td><td>One frozen wire format, one topic scheme and a schema that tests can defend.</td></tr>
     </tbody>
   </table>
@@ -134,15 +148,15 @@
     <li>A real message can be observed in AWS IoT Core.</li>
   </ul>
   <p>
-    All six are now true. What is <em>not</em> yet true is the factory-floor part:
-    reading real Modbus and OPC UA equipment. That is the next phase, not a hidden
-    part of this one.
+    All six are now true. What is <em>not</em> yet true is the solar-site part:
+    reading a real inverter over Modbus TCP, then adding OPC UA and RTU. That is
+    the next phase, not a hidden part of this one.
   </p>
 
   <div class="callout warn">
     <strong>Do not confuse the proof with production.</strong>
     The current source is a deterministic pretend sensor. The AWS account is a
-    sandbox. The component is a real deployment, but no real machine has been
+    sandbox. The component is a real deployment, but no real inverter has been
     connected, and no production security review has happened.
   </div>
 

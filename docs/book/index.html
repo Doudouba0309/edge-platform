@@ -22,7 +22,7 @@
 <div class="cover">
   <div class="cover-mark">E</div>
   <p class="chapter-label">A field guide for builders and operators</p>
-  <h1>From a factory sensor to a message in AWS</h1>
+  <h1>From a solar sensor to a message in AWS</h1>
   <p class="lede">
     The complete, plain-English story of the Edge Platform: what it is, why it
     is shaped this way, what has actually been built, and how to rebuild it from
@@ -50,7 +50,7 @@
   <a class="chapter-card" href="01-problem.html">
     <b>Part 1</b>
     The problem
-    <span>Factories, sensors, unreliable networks, and why a gateway exists.</span>
+    <span>Solar sites, inverters, unreliable networks, and why a gateway exists.</span>
   </a>
   <a class="chapter-card" href="02-design.html">
     <b>Part 2</b>
@@ -109,13 +109,13 @@
 <h2>What this book is not</h2>
 <ul>
   <li>It is not a production operations manual. The deployment is a sandbox proof.</li>
-  <li>It is not a claim that real factory devices are supported yet. The current source is synthetic.</li>
+  <li>It is not a claim that real solar devices are supported yet. The current source is synthetic.</li>
   <li>It does not contain private keys, passwords or AWS secrets. Those stay on the machine, never in the repository.</li>
 </ul>
 
 <div class="callout">
   <strong>The one-sentence version.</strong>
-  We built a small, careful data pipeline for factory readings, packaged it as a
+  We built a small, careful data pipeline for solar readings, packaged it as a
   Greengrass component, and proved that a reading can travel from the collector
   through the local postmaster into AWS IoT Core.
 </div>
