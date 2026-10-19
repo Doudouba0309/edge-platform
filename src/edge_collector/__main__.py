@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
         asyncio.run(CollectorApp(cfg).run())
     except KeyboardInterrupt:
         return 130
-    except OSError as exc:
+    except (OSError, ConfigError) as exc:
         logging.getLogger(__name__).error("collector failed to start: %s", exc)
         return 1
     return 0

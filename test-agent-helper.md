@@ -17,7 +17,7 @@ slice is **Solar + Modbus TCP**, not yet implemented.
 |---|---|
 | Live component | `1.0.10`, RUNNING |
 | LogManager | `2.3.14`, RUNNING |
-| Tests | 150 |
+| Tests | 167 |
 | Remote access | Evidence-only (A); no SSH |
 | Sandbox | Kept for Phase 1 |
 | SNS | Confirmed |
@@ -33,6 +33,8 @@ slice is **Solar + Modbus TCP**, not yet implemented.
 | `src/edge_collector/spool.py` | SQLite WAL outbox |
 | `src/edge_collector/config.py` | YAML config and defaults |
 | `src/edge_collector/pointmap.py` | Point-map models, validation and JSON Schema |
+| `src/edge_collector/sources/modbus_tcp.py` | Modbus TCP source |
+| `scripts/modbus_surrogate.py` | Local solar Modbus surrogate |
 | `schemas/point-map.schema.json` | Generated point-map schema |
 | `config/pointmaps/` | Solar surrogate point map |
 | `src/edge_collector/sources/` | Sources; only synthetic exists today |

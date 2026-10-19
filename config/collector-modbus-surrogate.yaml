@@ -1,0 +1,27 @@
+# Run the collector against the local Modbus TCP surrogate.
+gateway_id: dev-gateway-01
+component_version: dev
+log_level: INFO
+log_json: false
+log_file: var/collector-modbus.log
+status_enabled: true
+status_interval_s: 30
+batching:
+  queue_max: 1000
+  overflow_policy: drop_oldest
+  max_samples: 10
+  flush_interval_s: 1.0
+sink:
+  kind: log
+spool:
+  enabled: false
+sources:
+  synthetic:
+    enabled: false
+  modbus_tcp:
+    enabled: true
+    point_map: config/pointmaps/solar-surrogate.yaml
+health:
+  enabled: true
+  host: 127.0.0.1
+  port: 8081

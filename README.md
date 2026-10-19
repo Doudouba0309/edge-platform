@@ -39,6 +39,13 @@ Validate the Phase 1A solar surrogate point map before starting the collector:
 .venv/bin/edge-collector validate-point-map config/pointmaps/solar-surrogate.yaml
 ```
 
+Run the local Modbus TCP surrogate and collector:
+
+```bash
+.venv/bin/python scripts/modbus_surrogate.py --port 5020 &
+.venv/bin/python -m edge_collector --config config/collector-modbus-surrogate.yaml
+```
+
 ### Logs, status and support
 
 The local config writes human-readable logs to stdout and to

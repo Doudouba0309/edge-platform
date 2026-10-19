@@ -32,7 +32,8 @@ make component
 ```
 
 The wheelhouse is pinned by `deploy/greengrass/component-requirements.lock` and
-built with `pip --require-hashes`. The artifact is built offline after the
+built with `pip --require-hashes`; it includes `pymodbus` for the Modbus TCP
+source. The generated point-map schema is `schemas/point-map.schema.json`. The artifact is built offline after the
 wheelhouse is populated. The component install step creates a venv with
 `python3 -m venv` and force-reinstalls the collector wheel, so the target core
 needs `python3` and `python3-venv`.

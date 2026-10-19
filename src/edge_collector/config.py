@@ -128,11 +128,28 @@ class SyntheticSourceConfig(BaseModel):
         return self
 
 
+class ModbusTcpSourceConfig(BaseModel):
+    """Modbus TCP source; the actual hierarchy lives in the point map."""
+
+    kind: Literal["modbus_tcp"] = "modbus_tcp"
+    enabled: bool = False
+    point_map: str = Field(default="config/pointmaps/solar-surrogate.yaml", min_length=1)
+
+
 class SourcesConfig(BaseModel):
     synthetic: SyntheticSourceConfig = Field(default_factory=SyntheticSourceConfig)
+    modbus_tcp: ModbusTcpSourceConfig = Field(default_factory=ModbusTcpSourceConfig)
 
-    def enabled_sources(self) -> list[SyntheticSourceConfig]:
-        return [source for source in (self.synthetic,) if source.enabled]
+    def enabled_sources(
+        self,
+    ) -> list[SyntheticSourceConfig | ModbusTcpSourceConfig]:
+        return [source for source in (self.synthetic, self.modbus_tcp) if source.enabled]
+
+    @model_validator(mode="after")
+    def _one_source_at_a_time(self) -> SourcesConfig:
+        if len(self.enabled_sources()) > 1:
+            raise ValueError("only one source may be enabled per collector process")
+        return self
 
 
 class CollectorConfig(BaseModel):

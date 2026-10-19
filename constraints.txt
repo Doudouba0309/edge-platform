@@ -2,6 +2,7 @@
 # Update deliberately; the image smoke is the check that the set still works.
 annotated-types==0.8.0
 paho-mqtt==2.1.0
+pymodbus==3.16.1
 pydantic==2.14.1
 pydantic-core==2.50.1
 PyYAML==6.0.3

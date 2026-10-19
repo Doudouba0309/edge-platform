@@ -1,7 +1,7 @@
 # Phase 1+ Decision Manifest
 
 - **Snapshot:** 18 October 2026
-- **Current live state:** component `1.0.10` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 163 tests pass.
+- **Current live state:** component `1.0.10` is RUNNING on the AWS sandbox; telemetry and status heartbeat are observed; 167 tests pass.
 - **Phase 1 target:** Solar + Modbus TCP, starting with a local surrogate. See [Solar + Modbus TCP Scope](solar-modbus-scope.md).
 - **Purpose:** list the decisions needed from the point-map contract onward, with a recommended default for each.
 

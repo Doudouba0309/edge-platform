@@ -26,7 +26,7 @@
   <table>
     <thead><tr><th>Area</th><th>Status</th><th>Evidence</th></tr></thead>
     <tbody>
-      <tr><td>Data contract</td><td><span class="pill">Done</span></td><td>Frozen JSON Schema; 163 tests.</td></tr>
+      <tr><td>Data contract</td><td><span class="pill">Done</span></td><td>Frozen JSON Schema; 167 tests.</td></tr>
       <tr><td>Collector runtime</td><td><span class="pill">Done</span></td><td>Batching, queue bounds, spool, health, graceful shutdown.</td></tr>
       <tr><td>Local mTLS and outage replay</td><td><span class="pill">Done</span></td><td><code>make verify</code> passes.</td></tr>
       <tr><td>Tier 1 images</td><td><span class="pill">Done</span></td><td>arm64 and x86_64 boot smoke passes.</td></tr>
@@ -34,7 +34,8 @@
       <tr><td>IPC publish</td><td><span class="pill">Done</span></td><td>Component 1.0.10 publishes telemetry and status through the nucleus.</td></tr>
       <tr><td>AWS data path</td><td><span class="pill">Done</span></td><td>Real batch observed in IoT Core.</td></tr>
       <tr><td>Supportability foundation</td><td><span class="pill">Live</span></td><td>JSON logs, support bundle and status heartbeat; 1.0.10 deployed to AWS.</td></tr>
-      <tr><td>Real Modbus/OPC UA</td><td><span class="pill warn">Not started</span></td><td>The source is still synthetic.</td></tr>
+      <tr><td>Point map + Modbus TCP</td><td><span class="pill">Local</span></td><td>Schema, validator and a real Modbus TCP source are implemented; local surrogate works. AWS/hardware proof pending.</td></tr>
+      <tr><td>Real OPC UA/RTU</td><td><span class="pill warn">Not started</span></td><td>Next protocol slices; hardware-in-the-loop required.</td></tr>
       <tr><td>Repeatable AWS scripts</td><td><span class="pill warn">Not done</span></td><td>The proof used documented manual CLI steps.</td></tr>
       <tr><td>Teardown</td><td><span class="pill warn">Pending</span></td><td>Live sandbox left for inspection.</td></tr>
     </tbody>
@@ -46,7 +47,7 @@
   </p>
   <div class="grid-2">
     <div class="tile"><h3>Image</h3><p>Both Tier 1 images booted, published, stayed under the memory ceiling and stopped cleanly.</p></div>
-    <div class="tile"><h3>Collector</h3><p>163 tests, health 200/ready 200, mTLS, one batch spooled offline and replayed.</p></div>
+    <div class="tile"><h3>Collector</h3><p>167 tests, health 200/ready 200, mTLS, one batch spooled offline and replayed.</p></div>
     <div class="tile"><h3>AWS core</h3><p>Core <code>HEALTHY</code>, component 1.0.10 <code>RUNNING</code>.</p></div>
     <div class="tile"><h3>AWS data</h3><p>A schema-1.0 batch observed on the expected telemetry topic with quality <code>good</code>.</p></div>
   </div>
@@ -82,9 +83,9 @@
   <table>
     <thead><tr><th>Missing</th><th>Why it matters</th><th>Where it belongs</th></tr></thead>
     <tbody>
-      <tr><td>Point-map schema and engine</td><td>A controls engineer should map a device without writing Python.</td><td>Phase 1, base component set.</td></tr>
-      <tr><td>Modbus TCP source</td><td>The most common real-site protocol in the roadmap.</td><td>Phase 1 adapter.</td></tr>
-      <tr><td>OPC UA source</td><td>Many PLCs expose OPC UA; the current code only has the contract, not the source.</td><td>Phase 1 adapter.</td></tr>
+      <tr><td>Point-map schema and engine</td><td>Schema and validator are in place; the Modbus source consumes them.</td><td>Phase 1A done. First solar map validated.</td></tr>
+      <tr><td>Modbus TCP source</td><td>Local source and surrogate are implemented; a real Huawei map and HIL are pending.</td><td>Phase 1B local.</td></tr>
+      <tr><td>OPC UA source</td><td>Not implemented.</td><td>Later Phase 1/2.</td></tr>
       <tr><td>Device surrogates and conformance suite</td><td>An adapter without a test against a simulated device is not trustworthy.</td><td>Phase 2.</td></tr>
       <tr><td>Repeatable provisioning scripts</td><td>The AWS proof is manual and took several corrections.</td><td>Operations, before the next AWS test.</td></tr>
       <tr><td>Production security review</td><td>Certificate rotation, least privilege and incident response are not exercised.</td><td>Before a real deployment.</td></tr>

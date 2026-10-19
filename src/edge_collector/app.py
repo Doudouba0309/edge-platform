@@ -16,15 +16,23 @@ from edge_collector.config import (
 from edge_collector.health import HealthServer
 from edge_collector.logging_setup import reset_log_context, set_log_context
 from edge_collector.pipeline import Pipeline
+from edge_collector.pointmap import PointMapError, load_point_map
 from edge_collector.sinks import GreengrassIpcSink, LogSink, MqttSink, Sink
 from edge_collector.sources import EmitFn
 from edge_collector.sources.base import Source
+from edge_collector.sources.modbus_tcp import ModbusTcpSource
 from edge_collector.sources.synthetic import SyntheticSource
 from edge_collector.spool import Spool
 from edge_collector.status import StatusReporter, collector_version
 
 
 def build_source(cfg: CollectorConfig, emit: EmitFn) -> Source:
+    if cfg.sources.modbus_tcp.enabled:
+        try:
+            point_map = load_point_map(cfg.sources.modbus_tcp.point_map)
+        except PointMapError as exc:
+            raise ConfigError(f"invalid Modbus point map: {exc}") from exc
+        return ModbusTcpSource(point_map, emit)
     if cfg.sources.synthetic.enabled:
         return SyntheticSource(cfg.sources.synthetic, emit)
     raise ConfigError("no source is enabled")
