@@ -33,6 +33,12 @@ make install
 Health endpoints are served on `http://127.0.0.1:8081`: `/healthz`, `/readyz`
 and `/stats`.
 
+Validate the Phase 1A solar surrogate point map before starting the collector:
+
+```bash
+.venv/bin/edge-collector validate-point-map config/pointmaps/solar-surrogate.yaml
+```
+
 ### Logs, status and support
 
 The local config writes human-readable logs to stdout and to

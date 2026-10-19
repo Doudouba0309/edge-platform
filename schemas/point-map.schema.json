@@ -1,0 +1,262 @@
+{
+  "$defs": {
+    "ModbusTcpSource": {
+      "additionalProperties": false,
+      "description": "One Modbus TCP connection and its slaves.",
+      "properties": {
+        "host": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Host",
+          "type": "string"
+        },
+        "id": {
+          "description": "Stable connection name",
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "poll_interval_s": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Poll Interval S",
+          "type": "number"
+        },
+        "port": {
+          "default": 502,
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Port",
+          "type": "integer"
+        },
+        "retries": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        },
+        "slaves": {
+          "items": {
+            "$ref": "#/$defs/Slave"
+          },
+          "minItems": 1,
+          "title": "Slaves",
+          "type": "array"
+        },
+        "timeout_s": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "title": "Timeout S",
+          "type": "number"
+        },
+        "type": {
+          "const": "modbus_tcp",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "host",
+        "slaves"
+      ],
+      "title": "ModbusTcpSource",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "description": "One metric at one protocol address.",
+      "properties": {
+        "address": {
+          "description": "Zero-based protocol address, not a 40001-style reference",
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Address",
+          "type": "integer"
+        },
+        "byte_order": {
+          "default": "big",
+          "description": "Byte order inside each register",
+          "enum": [
+            "big",
+            "little"
+          ],
+          "title": "Byte Order",
+          "type": "string"
+        },
+        "deadband": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadband"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "function": {
+          "description": "Modbus function family",
+          "enum": [
+            "coil",
+            "discrete_input",
+            "holding_register",
+            "input_register"
+          ],
+          "title": "Function",
+          "type": "string"
+        },
+        "length": {
+          "anyOf": [
+            {
+              "maximum": 125,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of registers for a string; required only for string",
+          "title": "Length"
+        },
+        "metric": {
+          "description": "Stable metric name",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric",
+          "type": "string"
+        },
+        "offset": {
+          "default": 0.0,
+          "title": "Offset",
+          "type": "number"
+        },
+        "scale": {
+          "default": 1.0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "type": {
+          "description": "Wire type",
+          "enum": [
+            "bool",
+            "int16",
+            "uint16",
+            "int32",
+            "uint32",
+            "float32",
+            "float64",
+            "string"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "word_order": {
+          "default": "big",
+          "description": "Register order for 32/64-bit values",
+          "enum": [
+            "big",
+            "little"
+          ],
+          "title": "Word Order",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric",
+        "function",
+        "address",
+        "type"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "Slave": {
+      "additionalProperties": false,
+      "description": "One Modbus unit/slave on a source connection.",
+      "properties": {
+        "device_id": {
+          "description": "Logical asset; this becomes Sample.device_id",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Device Id",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "minItems": 1,
+          "title": "Points",
+          "type": "array"
+        },
+        "unit_id": {
+          "description": "Modbus unit/slave id",
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Unit Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "unit_id",
+        "device_id",
+        "points"
+      ],
+      "title": "Slave",
+      "type": "object"
+    }
+  },
+  "$id": "https://edge-intelligence.example/schemas/point-map.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned mapping from a Modbus source/slave/device to named metrics. Addresses are zero-based protocol offsets, not 40001-style references.",
+  "properties": {
+    "source": {
+      "$ref": "#/$defs/ModbusTcpSource"
+    },
+    "version": {
+      "const": 1,
+      "description": "Point-map schema version; currently 1",
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "source"
+  ],
+  "title": "Edge Platform point map",
+  "type": "object"
+}

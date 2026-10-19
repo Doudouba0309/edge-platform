@@ -109,32 +109,36 @@ The exact schema is Phase 1A. The intended shape is:
 ```yaml
 version: 1
 source:
+  id: inv-yard-1
   type: modbus_tcp
   host: 127.0.0.1
   port: 5020
-  unit_id: 1
-points:
-  - metric: ac_power_kw
-    function: holding_register
-    address: 100
-    type: float32
-    word_order: big
-    scale: 1.0
-    unit: kW
-    deadband: 0.1
-  - metric: fault_code
-    function: holding_register
-    address: 120
-    type: uint16
-    unit: code
+  slaves:
+    - unit_id: 1
+      device_id: inv-01
+      points:
+        - metric: ac_power_kw
+          function: holding_register
+          address: 100
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kW
+          deadband: 0.1
+        - metric: fault_code
+          function: holding_register
+          address: 120
+          type: uint16
+          unit: code
 ```
 
-Addresses above are **illustrative only**. The surrogate will use its own
-documented map; a real site map must come from the vendor or a captured trace.
+The working surrogate map is `config/pointmaps/solar-surrogate.yaml`; the
+committed schema is `schemas/point-map.schema.json`. Addresses above are
+**illustrative only**; a real site map must come from the vendor or a captured trace.
 
 ## Acceptance criteria
 
-1. An invalid point map fails validation before deployment.
+1. An invalid point map fails `edge-collector validate-point-map` before deployment.
 2. A valid map drives the Modbus TCP source.
 3. A local surrogate produces the expected `Sample` values, units and quality.
 4. A timeout or Modbus exception produces `quality: bad` and increments an

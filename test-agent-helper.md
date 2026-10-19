@@ -32,6 +32,9 @@ slice is **Solar + Modbus TCP**, not yet implemented.
 | `src/edge_collector/pipeline.py` | Queue, batching, flush, spool/replay |
 | `src/edge_collector/spool.py` | SQLite WAL outbox |
 | `src/edge_collector/config.py` | YAML config and defaults |
+| `src/edge_collector/pointmap.py` | Point-map models, validation and JSON Schema |
+| `schemas/point-map.schema.json` | Generated point-map schema |
+| `config/pointmaps/` | Solar surrogate point map |
 | `src/edge_collector/sources/` | Sources; only synthetic exists today |
 | `src/edge_collector/sinks/` | Log, MQTT, Greengrass IPC |
 | `src/edge_collector/status.py` | Heartbeat/status reporter |

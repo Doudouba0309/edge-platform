@@ -1,0 +1,102 @@
+# Phase 1A solar surrogate point map.
+# Addresses are illustrative; the local Modbus TCP surrogate will implement this
+# exact map. A real site must use the vendor register map or a captured trace.
+version: 1
+source:
+  id: inv-yard-1
+  type: modbus_tcp
+  host: 127.0.0.1
+  port: 5020
+  timeout_s: 2.0
+  retries: 2
+  poll_interval_s: 10.0
+  slaves:
+    - unit_id: 1
+      device_id: inv-01
+      points:
+        - metric: ac_power_kw
+          function: holding_register
+          address: 100
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kW
+          deadband: 0.1
+        - metric: dc_power_kw
+          function: holding_register
+          address: 102
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kW
+          deadband: 0.1
+        - metric: energy_today_kwh
+          function: holding_register
+          address: 104
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kWh
+        - metric: inverter_temp_c
+          function: holding_register
+          address: 106
+          type: int16
+          scale: 0.1
+          unit: degC
+          deadband: 0.2
+        - metric: status_code
+          function: holding_register
+          address: 108
+          type: uint16
+        - metric: fault_code
+          function: holding_register
+          address: 109
+          type: uint16
+    - unit_id: 2
+      device_id: meter-01
+      points:
+        - metric: export_power_kw
+          function: input_register
+          address: 10
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kW
+          deadband: 0.1
+        - metric: import_power_kw
+          function: input_register
+          address: 12
+          type: float32
+          word_order: big
+          scale: 1.0
+          unit: kW
+          deadband: 0.1
+        - metric: energy_export_kwh
+          function: input_register
+          address: 14
+          type: float64
+          word_order: big
+          scale: 1.0
+          unit: kWh
+    - unit_id: 3
+      device_id: weather-01
+      points:
+        - metric: irradiance_w_m2
+          function: input_register
+          address: 0
+          type: uint16
+          scale: 1.0
+          unit: W/m2
+        - metric: ambient_temp_c
+          function: input_register
+          address: 2
+          type: int16
+          scale: 0.1
+          unit: degC
+          deadband: 0.2
+        - metric: wind_speed_m_s
+          function: input_register
+          address: 4
+          type: uint16
+          scale: 0.1
+          unit: m/s
