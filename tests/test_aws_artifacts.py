@@ -29,7 +29,7 @@ REGION = "ap-southeast-1"
 ACCOUNT_ID = "123456789012"
 BUCKET = f"edge-platform-sandbox-{ACCOUNT_ID}-{REGION}"
 COMPONENT_NAME = "io.github.doudouba0309.EdgePlatform.Collector"
-COMPONENT_VERSION = "1.0.11"
+COMPONENT_VERSION = "1.0.12"
 ARTIFACT_NAME = f"EdgeCollector-{COMPONENT_VERSION}.zip"
 ARTIFACT_STEM = f"EdgeCollector-{COMPONENT_VERSION}"
 DIST_VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][

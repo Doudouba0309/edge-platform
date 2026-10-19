@@ -15,6 +15,7 @@ ComponentConfiguration:
   DefaultConfiguration:
     gatewayId: "__GATEWAY_ID__"
     deviceId: "__DEVICE_ID__"
+    sourceMode: "synthetic"
     logLevel: "INFO"
     accessControl:
       aws.greengrass.ipc.mqttproxy:
@@ -50,6 +51,7 @@ Manifests:
       Run:
         Script: |
           set -eu
+          ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
           component_version: "__COMPONENT_VERSION__"
@@ -75,7 +77,19 @@ Manifests:
             path: "{work:path}/spool.sqlite3"
             max_bytes: 67108864
             replay_interval_s: 1.0
+          EOF
+          cat >> "{work:path}/collector.yaml" <<EOF
           sources:
+          EOF
+          if [ "{configuration:/sourceMode}" = "modbus_tcp" ]; then
+            cp "$ART/pointmaps/point-map.yaml" "{work:path}/point-map.yaml"
+            cat >> "{work:path}/collector.yaml" <<EOF
+            modbus_tcp:
+              enabled: true
+              point_map: "{work:path}/point-map.yaml"
+          EOF
+          else
+            cat >> "{work:path}/collector.yaml" <<EOF
             synthetic:
               enabled: true
               device_id: "{configuration:/deviceId}"
@@ -86,6 +100,7 @@ Manifests:
                   step: 0.1
                   unit: degC
           EOF
+          fi
           exec "{work:path}/venv/bin/edge-collector" --config "{work:path}/collector.yaml"
 
   - Platform:
@@ -106,6 +121,7 @@ Manifests:
       Run:
         Script: |
           set -eu
+          ART="{artifacts:decompressedPath}/__ARTIFACT_STEM__"
           cat > "{work:path}/collector.yaml" <<EOF
           gateway_id: "{configuration:/gatewayId}"
           component_version: "__COMPONENT_VERSION__"
@@ -131,7 +147,19 @@ Manifests:
             path: "{work:path}/spool.sqlite3"
             max_bytes: 67108864
             replay_interval_s: 1.0
+          EOF
+          cat >> "{work:path}/collector.yaml" <<EOF
           sources:
+          EOF
+          if [ "{configuration:/sourceMode}" = "modbus_tcp" ]; then
+            cp "$ART/pointmaps/point-map.yaml" "{work:path}/point-map.yaml"
+            cat >> "{work:path}/collector.yaml" <<EOF
+            modbus_tcp:
+              enabled: true
+              point_map: "{work:path}/point-map.yaml"
+          EOF
+          else
+            cat >> "{work:path}/collector.yaml" <<EOF
             synthetic:
               enabled: true
               device_id: "{configuration:/deviceId}"
@@ -142,4 +170,5 @@ Manifests:
                   step: 0.1
                   unit: degC
           EOF
+          fi
           exec "{work:path}/venv/bin/edge-collector" --config "{work:path}/collector.yaml"

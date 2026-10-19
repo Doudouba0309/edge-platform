@@ -10,20 +10,20 @@ One confirmation and several actions remain.
 
 | Check | Evidence |
 |---|---|
-| Collector live | `1.0.10` RUNNING on `edge-platform-sandbox-core` |
+| Collector live | `1.0.12` RUNNING on `edge-platform-sandbox-core` |
 | Log shipping | `aws.greengrass.LogManager` 2.3.14 RUNNING |
 | Log retention | 30 days on both Greengrass log groups |
 | Support bundle retention | `support/` objects expire after 30 days |
 | Bucket privacy | All four public-access blocks enabled |
 | Certificate | ACTIVE; sandbox certificate valid to 2050 |
-| Heartbeat | `version: 1.0.10`, `ready: true`, `expires_at` present |
+| Heartbeat | `version: 1.0.12`, `ready: true`, `expires_at` present |
 | Alarm state | `edge-platform-sandbox-heartbeat-missing` = OK; missing-heartbeat drill passed |
 | No inbound shell | No exposed Docker ports; no active tunnels; no SSH by default |
 | Support upload | Dry-run resolves the S3 key correctly |
 | Health | `/healthz` 200, `/readyz` 200 |
 | Disk | 11% used on `/greengrass/v2` |
 | Tests | 147 passing; CI and security green |
-| Versioning | Component 1.0.10 immutable; hashed wheel lock |
+| Versioning | Component 1.0.12 immutable; hashed wheel lock |
 
 ## Blockers
 
@@ -37,7 +37,7 @@ One confirmation and several actions remain.
 | # | Action | Owner |
 |---|---|---|
 | A1 | Verify restart policy. The sandbox container is `restart=no`; production must use systemd or a managed service with restart-on-failure. | Engineering |
-| A2 | Prove rollback: deploy a bad component version, confirm `ROLLBACK`, then return to 1.0.10. | Engineering |
+| A2 | Prove rollback: deploy a bad component version, confirm `ROLLBACK`, then return to 1.0.12. | Engineering |
 | A3 | Test support-bundle upload end to end with a real bundle and a presigned URL. | Support |
 | A4 | Decide remote access explicitly: logs/bundle only, or an approved outbound tunnel. A tunnel is not usable until an approved destination service exists. | Client + engineering |
 | A5 | Confirm data residency and retention with the client (CloudWatch 30 days, S3 support 30 days). | Client |

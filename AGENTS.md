@@ -221,7 +221,7 @@ Do not reintroduce these. Each was a real failure:
     component version changed, but the code did not.
 13. **Telemetry and status need separate IPC policy IDs.** A combined policy
     listed both resources, but status was denied while telemetry worked. Split
-    `:mqttproxy:telemetry` and `:mqttproxy:status`; status then worked in 1.0.10.
+    `:mqttproxy:telemetry` and `:mqttproxy:status`; status then worked in 1.0.12.
 
 ## Never run these without explicit human instruction
 
@@ -276,10 +276,10 @@ A change is complete when all of these hold:
 ## Notes on the AWS path
 
 The collector has been provisioned, published and deployed into the sandbox:
-component 1.0.10 published, deployed to `edge-platform-sandbox-core`, and a
+component 1.0.12 published, deployed to `edge-platform-sandbox-core`, and a
 telemetry batch was observed on `edge/edge-platform-sandbox-core/plc-line-1/telemetry`.
 The supportability slice (JSON logs, status heartbeat, support bundle) is live in
-component 1.0.10; status telemetry was observed in AWS IoT Core. The sandbox
+component 1.0.12; status telemetry was observed in AWS IoT Core. The sandbox
 resources are intentionally left up for inspection; teardown is a separate,
 explicitly confirmed action.
 
@@ -290,7 +290,7 @@ The following paths are covered by tests:
   hostname verification, client-cert authentication and the publish topic. The
   nucleus-to-IoT-Core mTLS leg was exercised by the sandbox proof.
 - **Greengrass IPC sink.** Unit-tested against a fake IPC client, and verified
-  end-to-end in the sandbox with component 1.0.4 and again with 1.0.10. The real publish reached
+  end-to-end in the sandbox with component 1.0.4 and again with 1.0.12. The real publish reached
   `edge/edge-platform-sandbox-core/plc-line-1/telemetry`.
 - **Containerised nucleus.** `scripts/smoke-nucleus.sh` builds the pinned
   nucleus `2.18.4` image and verifies "Launched Nucleus successfully", the IPC

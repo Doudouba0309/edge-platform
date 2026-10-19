@@ -15,7 +15,7 @@ slice is **Solar + Modbus TCP**, not yet implemented.
 
 | Item | Value |
 |---|---|
-| Live component | `1.0.10`, RUNNING |
+| Live component | `1.0.12`, RUNNING |
 | LogManager | `2.3.14`, RUNNING |
 | Tests | 167 |
 | Remote access | Evidence-only (A); no SSH |

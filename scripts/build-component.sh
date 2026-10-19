@@ -11,13 +11,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPONENT_NAME="${GG_COMPONENT_NAME:-io.github.doudouba0309.EdgePlatform.Collector}"
-COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.11}"
+COMPONENT_VERSION="${GG_COMPONENT_VERSION:-1.0.12}"
 ARTIFACT_NAME="EdgeCollector-${COMPONENT_VERSION}.zip"
 ARTIFACT_STEM="EdgeCollector-${COMPONENT_VERSION}"
 BUCKET="${GG_BUCKET:-edge-platform-sandbox-ACCOUNT-ap-southeast-1}"
 REGION="${GG_REGION:-ap-southeast-1}"
 ACCOUNT_ID="${GG_ACCOUNT_ID:-123456789012}"
 THING_NAME="${GG_THING_NAME:-edge-platform-sandbox-core}"
+POINT_MAP="${GG_POINT_MAP:-$ROOT/config/pointmaps/solar-surrogate.yaml}"
 ROLE_ALIAS="${GG_ROLE_ALIAS:-edge-platform-sandbox-TESRoleAlias}"
 GATEWAY_ID="${GG_GATEWAY_ID:-$THING_NAME}"
 DEVICE_ID="${GG_DEVICE_ID:-plc-line-1}"
@@ -47,7 +48,8 @@ PY
 )"
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$PROJECT_WHEEL_DIR" "$ARTIFACT_DIR/wheels"
+mkdir -p "$PROJECT_WHEEL_DIR" "$ARTIFACT_DIR/wheels" "$ARTIFACT_DIR/pointmaps"
+cp "$POINT_MAP" "$ARTIFACT_DIR/pointmaps/point-map.yaml"
 
 echo "building edge-collector ${DIST_VERSION} wheel"
 uv build --wheel --out-dir "$PROJECT_WHEEL_DIR" >/dev/null

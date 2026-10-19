@@ -132,7 +132,9 @@ source:
           unit: code
 ```
 
-The working surrogate map is `config/pointmaps/solar-surrogate.yaml`; the
+For the AWS core, use `config/pointmaps/solar-surrogate-core.yaml` (host
+`host.docker.internal`). The working local map is
+`config/pointmaps/solar-surrogate.yaml`; the
 committed schema is `schemas/point-map.schema.json`. Addresses above are
 **illustrative only**; a real site map must come from the vendor or a captured trace.
 

@@ -63,6 +63,10 @@ Publishing the component to S3, creating the component version, provisioning
 the test core and deploying it are separate AWS steps. They are intentionally
 not part of `make component`.
 
+The recipe defaults to `sourceMode: synthetic`. A deployment can merge
+`sourceMode: modbus_tcp`; the build includes `GG_POINT_MAP` as
+`pointmaps/point-map.yaml`, and the Run script copies it to the work directory.
+
 CloudWatch log shipping uses `aws.greengrass.LogManager`; the deployment config is
 `deploy/greengrass/logmanager-config.json`. The remote-support runbook and
 heartbeat alarm config are in `docs/remote-support.md` and
