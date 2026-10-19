@@ -162,6 +162,31 @@
   </div>
 </section>
 
+<section id="what-proves">
+  <h2>What each check protects</h2>
+  <p>
+    A green check is only useful if you know what it rules out. This table explains
+    the job of each test in ordinary language.
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>What it protects</th><th>What it does not prove</th></tr></thead>
+    <tbody>
+      <tr><td><code>make check</code></td><td>The data shape, batching, spool, sinks and validation still agree with their tests.</td><td>That a real broker, image or AWS account works.</td></tr>
+      <tr><td><code>make verify</code></td><td>The collector presents a certificate, publishes, survives an outage and replays in order.</td><td>That the Greengrass component or AWS core is configured.</td></tr>
+      <tr><td><code>make smoke</code></td><td>The actual image boots on each architecture, publishes and shuts down cleanly.</td><td>That the component installs on a real core.</td></tr>
+      <tr><td>AWS MQTT check</td><td>The real thing name, certificate, policy, nucleus and topic agree.</td><td>That a real inverter is connected.</td></tr>
+      <tr><td>Status check</td><td>The gateway can say “online”, “offline” and “heartbeat” in a machine-readable way.</td><td>That every source is healthy forever.</td></tr>
+      <tr><td>Support bundle</td><td>Evidence can be collected, redacted and moved to a support engineer.</td><td>That every possible secret has been removed; review is still required.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    <strong>What this guide cannot prove.</strong>
+    It cannot prove a real Huawei register map, RS-485 wiring, a 30-day outage,
+    a 40-site rollout or a client security review. Those need the real device,
+    the real site and the client’s approval.
+  </div>
+</section>
+
 <section id="words">
   <h2>Words in plain English</h2>
   <table>

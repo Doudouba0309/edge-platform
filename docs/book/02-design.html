@@ -28,6 +28,49 @@
     it to AWS.
   </p>
 
+  <h2>Before the jargon: the design as a story</h2>
+  <p>
+    Imagine a solar site early in the morning. An inverter knows its AC power, a
+    weather station knows the sunlight, and a meter knows the energy leaving the
+    site. Each one speaks a slightly different language. We want one reliable
+    parcel of readings to reach AWS, even if the internet is unreliable.
+  </p>
+  <p>
+    The design is a chain of small, replaceable jobs:
+  </p>
+  <div class="diagram">
+    <div class="box">Read<br><span class="small">inverter, meter, weather</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Translate<br><span class="small">one Sample shape</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Pack<br><span class="small">one Batch per device</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Protect<br><span class="small">queue + disk outbox</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Send<br><span class="small">postmaster to AWS</span></div>
+  </div>
+  <p>
+    The rest of this chapter explains each box, why it exists, and what would go
+    wrong if we removed it. The important idea is not the number of boxes; it is
+    that a change to one site’s register map should never force a new image or a
+    change to the cloud contract.
+  </p>
+
+  <h3>Terms used in this chapter</h3>
+  <table>
+    <thead><tr><th>Term</th><th>In plain English</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Protocol</strong></td><td>The language a device speaks: Modbus, OPC UA or MQTT.</td></tr>
+      <tr><td><strong>Sample</strong></td><td>One labelled reading: device, metric, value, time, quality and unit.</td></tr>
+      <tr><td><strong>Batch</strong></td><td>A parcel of samples from one device, sent together to save messages.</td></tr>
+      <tr><td><strong>Point map</strong></td><td>The address book that says which register or node becomes which metric.</td></tr>
+      <tr><td><strong>Queue</strong></td><td>A small waiting line in memory for short bursts.</td></tr>
+      <tr><td><strong>Spool</strong></td><td>A durable outbox on disk for long outages and power cuts.</td></tr>
+      <tr><td><strong>Sink</strong></td><td>The sender: log, MQTT or the Greengrass IPC path.</td></tr>
+      <tr><td><strong>Northbound / southbound</strong></td><td>Toward AWS / toward the equipment.</td></tr>
+    </tbody>
+  </table>
+
   <h2>The stack, from site to silicon</h2>
   <div class="diagram">
     <div class="box">Site configuration<br><span class="small">addresses, names, thresholds</span></div>
@@ -136,6 +179,29 @@
     tier that this project deliberately stays under.
   </p>
 
+  <h3>A reading’s journey, with real numbers</h3>
+  <p>
+    Suppose the inverter reports AC power as two 16-bit registers. That is not yet
+    a “Sample”; it is just two integers. The journey is:
+  </p>
+  <ol>
+    <li><strong>Read</strong> the two registers as raw integers.</li>
+    <li><strong>Decode</strong> them as a 32-bit float, using the vendor’s word order.</li>
+    <li><strong>Scale</strong> the value if the vendor uses implied decimals.</li>
+    <li><strong>Name</strong> the result <code>ac_power_kw</code>.</li>
+    <li><strong>Attach</strong> the device <code>inv-01</code>, unit <code>kW</code>, UTC time and quality <code>good</code>.</li>
+    <li><strong>Batch</strong> it with the inverter’s other readings.</li>
+    <li><strong>Send</strong> the batch through the local postmaster to IoT Core.</li>
+  </ol>
+  <div class="callout">
+    <strong>If the receiver sees 123.4 kW, it should be able to trust where that
+    number came from.</strong>
+    The <code>origin</code> field records the protocol address. The
+    <code>quality</code> field separates “a real zero” from “the device did not
+    answer”. The point map records the interpretation; the cloud does not need to
+    understand Modbus.
+  </div>
+
   <h2>Topics and identities</h2>
   <p>There are only two topics in the frozen v1 namespace:</p>
   <pre><code>edge/&lt;gateway_id&gt;/&lt;device_id&gt;/telemetry
@@ -178,6 +244,26 @@ edge/&lt;gateway_id&gt;/status</code></pre>
     in <code>dropped_queue_full</code>. <code>drop_newest</code> is an explicit opt-in.
     There is deliberately no “block” policy, because a sensor callback must never
     stall the whole gateway.
+  </p>
+
+  <h3>Queue and spool: counter and back room</h3>
+  <div class="diagram">
+    <div class="box">Readings arrive<br><span class="small">at their own pace</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Queue<br><span class="small">small, in memory</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Batch<br><span class="small">grouped by device</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Spool<br><span class="small">disk outbox, if needed</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Send<br><span class="small">oldest first</span></div>
+  </div>
+  <p>
+    The queue is the shop counter: it absorbs a short rush and has a fixed number
+    of places. The spool is the back room: it is larger, survives a power cut, and
+    holds parcels until the delivery van returns. The queue’s default policy is
+    <code>drop_oldest</code>; the spool also removes the oldest payloads when its
+    byte budget is exceeded.
   </p>
 
   <h3>Ordering is the strongest guarantee</h3>

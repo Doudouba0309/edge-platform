@@ -216,6 +216,32 @@
   </div>
 </header>
 
+<section id="plain">
+  <h2>What you are creating, in plain language</h2>
+  <p>
+    AWS gives every job its own named object. This guide creates a safe, disposable
+    set of them:
+  </p>
+  <div class="grid">
+    <div class="card"><strong>Account</strong><span>The client’s container. Root is emergency-only.</span></div>
+    <div class="card"><strong>Admin identity</strong><span>Your named daily login, with MFA, not root.</span></div>
+    <div class="card"><strong>Thing + certificate</strong><span>The gateway’s name and passport.</span></div>
+    <div class="card"><strong>Policy</strong><span>Exactly which topics the passport may use.</span></div>
+    <div class="card"><strong>Role</strong><span>A temporary badge for the nucleus to read the component ZIP.</span></div>
+    <div class="card"><strong>Bucket</strong><span>Private storage for the component artifact.</span></div>
+  </div>
+  <p>
+    The sequence matters: the account and identity come first; the thing and
+    certificate next; the policy and role after that; the bucket last. The
+    Greengrass core ties them together.
+  </p>
+  <div class="callout warn">
+    <strong>Do not use production.</strong>
+    This is a sandbox guide. It creates billable resources and a gateway identity.
+    Use a dedicated account and a budget alarm.
+  </div>
+</section>
+
 <nav class="toc" aria-label="Contents">
   <h2>Contents</h2>
   <ul>

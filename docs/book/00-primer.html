@@ -23,6 +23,26 @@
     the design chapter uses them.
   </p>
 
+  <h2>Start with two wires and a question</h2>
+  <p>
+    Strip away the acronyms and most industrial reading is this:
+  </p>
+  <div class="diagram">
+    <div class="box">Your software<br><span class="small">asks a question</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Wire or network<br><span class="small">carries the bytes</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Device<br><span class="small">answers with numbers</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Your software<br><span class="small">turns numbers into meaning</span></div>
+  </div>
+  <p>
+    The wire might be an RS-485 pair, an Ethernet cable, Wi-Fi or a cellular link.
+    The question might be a Modbus read, an OPC UA browse or an MQTT subscription.
+    The meaning comes from the vendor’s map and your point map. Everything else in
+    this primer is detail around those four boxes.
+  </p>
+
   <div class="callout">
     <strong>The one-sentence version.</strong>
     A protocol is an agreed way to ask a device a question and interpret its answer;

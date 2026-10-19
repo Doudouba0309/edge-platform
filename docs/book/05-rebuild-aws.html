@@ -30,6 +30,40 @@
     is still a future improvement.
   </div>
 
+  <h2>What you are actually creating</h2>
+  <p>
+    This part can feel like a long list of AWS commands. The list is long because
+    AWS separates jobs into separate objects. Here is the cast:
+  </p>
+  <table>
+    <thead><tr><th>Object</th><th>Plain-English job</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AWS account</strong></td><td>The client-owned container for everything. The root user is only for emergencies.</td></tr>
+      <tr><td><strong>Admin profile</strong></td><td>Your named daily identity. Not root, and protected by MFA.</td></tr>
+      <tr><td><strong>Thing</strong></td><td>AWS’s name for the gateway. It is the identity the cloud recognises.</td></tr>
+      <tr><td><strong>Certificate</strong></td><td>The gateway’s passport. The private key never leaves the gateway.</td></tr>
+      <tr><td><strong>IoT policy</strong></td><td>The list of topics the certificate may use and the client id it may claim.</td></tr>
+      <tr><td><strong>TES role</strong></td><td>A temporary badge the nucleus exchanges for AWS permissions, such as reading the component ZIP.</td></tr>
+      <tr><td><strong>Greengrass nucleus</strong></td><td>The local postmaster that owns the certificate and the AWS connection.</td></tr>
+      <tr><td><strong>Component</strong></td><td>The collector software and its recipe, installed by the nucleus.</td></tr>
+      <tr><td><strong>Bucket</strong></td><td>Private storage for the component ZIP.</td></tr>
+    </tbody>
+  </table>
+  <div class="diagram">
+    <div class="box">Gateway<br><span class="small">certificate + thing</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Nucleus<br><span class="small">postmaster</span></div>
+    <div class="arrow">→</div>
+    <div class="box">TES role<br><span class="small">temporary badge</span></div>
+    <div class="arrow">→</div>
+    <div class="box">AWS<br><span class="small">IoT Core · S3</span></div>
+  </div>
+  <p>
+    None of these objects is optional. A missing policy, a wrong client id or a
+    certificate attached to the wrong thing produces a failure that looks like a
+    different problem. That is why the proof checks each link separately.
+  </p>
+
   <h2>1. Start with the account</h2>
   <p>
     If the account does not exist yet, follow the separate
@@ -396,6 +430,24 @@ aws greengrassv2 list-installed-components \
   --key certs/sandbox/observer.private.key \
   -i edge-platform-sandbox-observer \
   -t 'edge/#' -C 1 -W 60 -v</code></pre>
+
+  <h2>What the message tells you</h2>
+  <p>
+    When a batch appears in IoT Core, do not just check that “something arrived”.
+    Read it like a delivery label:
+  </p>
+  <ul>
+    <li><code>schema_version</code> says the parcel shape is the frozen v1 contract.</li>
+    <li><code>gateway_id</code> should match the thing name.</li>
+    <li><code>device_id</code> should match the topic level.</li>
+    <li><code>source</code> says <code>sim</code> or <code>modbus</code>.</li>
+    <li><code>quality</code> says whether the reading is trustworthy.</li>
+    <li><code>origin</code> says where in the protocol it came from.</li>
+  </ul>
+  <p>
+    A correct-looking number with the wrong device id is still a failure. The
+    label is part of the proof.
+  </p>
 
   <h2>13. Teardown — not yet automated</h2>
   <div class="callout danger">

@@ -27,6 +27,42 @@
     with the “expected” box before moving on. If something fails, jump to Part 6.
   </div>
 
+  <h2>What you are building</h2>
+  <p>
+    You are not just installing Python packages. You are building a small chain:
+  </p>
+  <div class="diagram">
+    <div class="box">Clone<br><span class="small">get the files</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Environment<br><span class="small">isolated Python</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Checks<br><span class="small">tests + types + secrets</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Run<br><span class="small">collector + health</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Prove<br><span class="small">mTLS + outage + replay</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Package<br><span class="small">image + component</span></div>
+  </div>
+  <p>
+    Each step has a visible finish line. If a command prints an error, stop there;
+    do not continue to the next step hoping it will fix itself. Part 6 explains
+    the common failures.
+  </p>
+
+  <h3>Terms you will meet</h3>
+  <table>
+    <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Virtual environment</strong></td><td>A private folder for this project’s Python packages, so it does not interfere with the rest of the computer.</td></tr>
+      <tr><td><strong>Ruff / mypy / pytest</strong></td><td>Three checks: formatting and style, type consistency, and behaviour tests.</td></tr>
+      <tr><td><strong>mTLS</strong></td><td>Mutual TLS: both sides present a certificate, so the collector and broker can prove who they are to each other.</td></tr>
+      <tr><td><strong>Image</strong></td><td>A prebuilt box with the OS, Python and collector, ready to run on a gateway.</td></tr>
+      <tr><td><strong>Component</strong></td><td>An installable Greengrass package containing the collector and its recipe.</td></tr>
+      <tr><td><strong>Wheelhouse</strong></td><td>A folder of Python packages bundled for offline installation on the gateway.</td></tr>
+    </tbody>
+  </table>
+
   <h2>1. What you need</h2>
   <table>
     <thead><tr><th>Tool</th><th>Why</th><th>Check</th></tr></thead>
@@ -189,6 +225,18 @@ grep -n -A6 'accessControl' build/component/recipe.yaml</code></pre>
     optional for a rebuild, but it is part of the CI evidence. Run
     <code>make sbom-nucleus</code> for the nucleus images.
   </p>
+
+  <h2>What each step proved</h2>
+  <table>
+    <thead><tr><th>Step</th><th>What it proved</th><th>What it did not prove</th></tr></thead>
+    <tbody>
+      <tr><td>Fast checks</td><td>The code is internally consistent and the contract tests pass.</td><td>That a real broker or image works.</td></tr>
+      <tr><td>Run by hand</td><td>The collector starts, reads config and serves health.</td><td>That TLS or AWS works.</td></tr>
+      <tr><td>mTLS/outage test</td><td>Certificates work, batches spool and replay in order.</td><td>That the AWS core or component deployment works.</td></tr>
+      <tr><td>Image smoke</td><td>The actual image boots and publishes on both architectures.</td><td>That the Greengrass component installs.</td></tr>
+      <tr><td>Component build</td><td>The recipe, wheelhouse and policy are internally consistent.</td><td>That AWS accepts or runs them.</td></tr>
+    </tbody>
+  </table>
 
   <h2>What you have now</h2>
   <ul class="checklist">

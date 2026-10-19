@@ -28,6 +28,20 @@
     <a href="../solar-modbus-scope.md">Solar + Modbus TCP Scope</a>.
   </p>
 
+  <div class="diagram">
+    <div class="box">Sunlight<br><span class="small">free fuel</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Inverter<br><span class="small">DC to AC</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Gateway<br><span class="small">read · translate · buffer</span></div>
+    <div class="arrow">→</div>
+    <div class="box">AWS<br><span class="small">receive · analyse</span></div>
+  </div>
+  <p>
+    Everything in this handbook exists to make that chain reliable, observable
+    and safe to operate — without asking the site to replace its equipment.
+  </p>
+
   <h2>Start with a real solar site</h2>
   <p>
     Picture a solar plant. Inverters turn DC from the arrays into AC for the grid.

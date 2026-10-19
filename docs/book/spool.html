@@ -28,6 +28,54 @@
     after a crash; it must not silently lose one.
   </div>
 
+  <h2>In plain language: the back room</h2>
+  <p>
+    The queue is the shop counter. It handles a short rush, but it has only a few
+    places and it disappears when the power goes off. The spool is the back room.
+    It is larger, it has shelves that survive a power cut, and it keeps parcels in
+    order until the delivery van returns.
+  </p>
+  <div class="diagram">
+    <div class="box">Batch built<br><span class="small">one device</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Queue<br><span class="small">short bursts</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Spool<br><span class="small">disk shelves</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Replay<br><span class="small">oldest first</span></div>
+    <div class="arrow">→</div>
+    <div class="box">AWS<br><span class="small">confirmed sent</span></div>
+  </div>
+
+  <h2>A six-hour outage, minute by minute</h2>
+  <table>
+    <thead><tr><th>Time</th><th>What the gateway is doing</th><th>What you would see</th></tr></thead>
+    <tbody>
+      <tr><td>10:00</td><td>Reads the inverter; the sender cannot reach AWS.</td><td><code>spooled</code> starts rising.</td></tr>
+      <tr><td>10:01</td><td>Writes the batch to the local outbox, then the next.</td><td><code>spool_pending</code> grows.</td></tr>
+      <tr><td>12:00</td><td>Keeps reading and spooling; nothing overtakes the backlog.</td><td>Disk use grows within the byte budget.</td></tr>
+      <tr><td>16:00</td><td>The link returns. Replay sends the oldest entry first.</td><td><code>replayed</code> rises; pending falls.</td></tr>
+      <tr><td>16:05</td><td>The backlog is drained; new batches go straight out.</td><td>Pending returns to zero.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    If the power fails during the outage, committed rows remain. The collector may
+    resend a batch after a crash; that is at-least-once delivery, not loss.
+  </p>
+
+  <h2>Terms used in this deep dive</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Plain English</th></tr></thead>
+    <tbody>
+      <tr><td><strong>WAL</strong></td><td>Write-ahead logging: SQLite’s way of making a crash-safe notebook.</td></tr>
+      <tr><td><strong>Payload</strong></td><td>The actual batch JSON, measured in bytes.</td></tr>
+      <tr><td><strong>Budget</strong></td><td>The maximum payload bytes the outbox may hold before old entries are removed.</td></tr>
+      <tr><td><strong>Replay</strong></td><td>Sending stored entries again, oldest first, after the link returns.</td></tr>
+      <tr><td><strong>At-least-once</strong></td><td>A message may be delivered twice, but it should not disappear.</td></tr>
+      <tr><td><strong>Corrupt</strong></td><td>A stored row that cannot be decoded; it is dropped and counted, not silently ignored.</td></tr>
+    </tbody>
+  </table>
+
   <h2>Why not keep everything in memory?</h2>
   <p>
     The in-memory queue is bounded. If the internet is down for six hours, a queue

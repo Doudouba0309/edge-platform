@@ -22,6 +22,29 @@
     finished product.
   </p>
 
+  <h2>How to read this page</h2>
+  <p>
+    “Done” means there is code and a test or a real observation behind it.
+    “Live” means it is running in the AWS sandbox now. “Surrogate” means the data
+    comes from a local stand-in, not a real inverter. “Not started” is honest, not
+    a criticism.
+  </p>
+  <div class="callout warn">
+    <strong>A working AWS proof is not a finished product.</strong>
+    It proves the pipe, the identity and the deployment. It does not prove a real
+    Huawei inverter, a real RS-485 bus, a 40-site rollout or a production security
+    review.
+  </div>
+  <div class="diagram">
+    <div class="box">Phase 0<br><span class="small">base + AWS proof</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Phase 1<br><span class="small">point map + Modbus</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Phase 2<br><span class="small">RTU + OPC UA + HIL</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Pilot<br><span class="small">one real site</span></div>
+  </div>
+
   <h2>Status at a glance</h2>
   <table>
     <thead><tr><th>Area</th><th>Status</th><th>Evidence</th></tr></thead>

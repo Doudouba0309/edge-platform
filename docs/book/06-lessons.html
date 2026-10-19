@@ -29,6 +29,30 @@
     broken.
   </div>
 
+  <h2>How to read a failure</h2>
+  <p>
+    Most of these failures were not caused by bad code. They were caused by a
+    mismatch between layers: an identity that did not match, a permission that
+    did not cover the exact resource, or a recipe that used the wrong operation
+    name. The log often blamed the last layer, not the first broken one.
+  </p>
+  <div class="diagram">
+    <div class="box">Symptom<br><span class="small">“nothing arrives”</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Layer<br><span class="small">identity? policy? endpoint?</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Evidence<br><span class="small">exact log line</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Fix<br><span class="small">smallest correct change</span></div>
+  </div>
+  <p>
+    A <strong>403</strong> means “I know who you are, but you may not do this”.
+    A <strong>timeout</strong> means “I did not get an answer”. An
+    <strong>invalid recipe</strong> means “the instructions themselves are wrong”.
+    Those are different problems, even when they all look like “the data is
+    missing”.
+  </p>
+
   <h2>The failure log</h2>
 
   <div class="card">

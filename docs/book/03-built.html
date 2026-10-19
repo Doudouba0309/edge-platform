@@ -22,6 +22,30 @@
     what now exists.
   </p>
 
+  <h2>How to read this history</h2>
+  <p>
+    This is not a commit log. It is the story of how a vague idea became a working
+    pipe: first the data shape, then the runtime, then the delivery to AWS, then
+    the supportability that makes it operable. Each slice had a finish line that
+    could be demonstrated, not just coded.
+  </p>
+  <div class="diagram">
+    <div class="box">1. Foundation<br><span class="small">contract · tests · design</span></div>
+    <div class="arrow">→</div>
+    <div class="box">2. Runtime<br><span class="small">queue · batch · spool</span></div>
+    <div class="arrow">→</div>
+    <div class="box">3. Delivery<br><span class="small">image · nucleus · component</span></div>
+    <div class="arrow">→</div>
+    <div class="box">4. Support<br><span class="small">logs · status · alarm · bundle</span></div>
+  </div>
+  <p>
+    A <strong>slice</strong> means a small piece of work with a testable result.
+    “Add the spool” is a slice. “Make the component deploy” is a slice. A
+    <strong>proof</strong> means the result was observed in the real environment,
+    not only in a unit test. A <strong>drift test</strong> means a test that fails
+    when the code and its documentation, policy or recipe disagree.
+  </p>
+
   <h2>The short version</h2>
   <div class="grid-3">
     <div class="tile"><h3>Foundation</h3><p>Repository, design documents, operating manual and a frozen data contract.</p></div>
@@ -120,6 +144,12 @@
   </ul>
 
   <h2>The AWS proof, step by step</h2>
+  <p>
+    The first AWS proof used a synthetic sensor and component 1.0.4. Later, the
+    same path was repeated with 1.0.10 for supportability and 1.0.12 for a real
+    Modbus TCP surrogate. The point was never “a message exists”; it was “the
+    exact component, identity, policy, nucleus and topic all agree”.
+  </p>
   <p>
     The code alone was not enough. The team provisioned a real test core and
     deployed the component. The proof took several attempts because each attempt
