@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plain English — What this is and why | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="plain-english.html">Plain English</a><a href="00-primer.html">Primer</a><a href="glossary.html">Glossary</a><a href="appendix.html">Reference</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Start here if the technical words feel heavy</p>
+  <h1>What this is, in ordinary language</h1>
+  <p class="lede">
+    This page explains the whole project without assuming you know what a PLC,
+    a register, a Greengrass component or a spool is. You do not need to run
+    anything. Read it like a short story about a solar site, a small computer,
+    and a parcel of readings.
+  </p>
+
+  <div class="callout">
+    <strong>The shortest possible version.</strong>
+    A solar site produces useful measurements. Those measurements are trapped in
+    equipment that speaks many different languages. We built a small, reliable
+    computer program that reads them, turns them into one common parcel, keeps
+    the parcel safe when the internet is down, and sends it to AWS when the
+    connection returns.
+  </div>
+
+  <h2>1. The problem: the solar site knows a lot, but cannot tell us</h2>
+  <p>
+    Picture a solar plant on a sunny morning. Inverters are turning sunlight into
+    electricity. A weather station is measuring how bright the sun is. A revenue
+    meter is recording how much power leaves the site. Somewhere, a SCADA system
+    or a historian is already collecting much of this information.
+  </p>
+  <p>
+    The trouble is that every piece of equipment describes itself differently.
+    One inverter might use Modbus TCP. Another speaks OPC UA. A weather station
+    may use MQTT. Each vendor uses different names, different units, different
+    address numbers and different rules. A reading that means “AC power” in one
+    device might sit at a completely different address in another.
+  </p>
+  <p>
+    The people who run the site want simple questions answered: How much power
+    are we making? Is an inverter underperforming? Is a fault code appearing? How
+    does today compare with the weather forecast? The people who protect the
+    plant do not want the cloud reaching directly into the control network. And
+    the internet connection is not perfect. It can disappear for minutes, hours
+    or longer.
+  </p>
+
+  <h2>2. The idea: put a small translator at the edge</h2>
+  <p>
+    “The edge” simply means the place near the equipment — at the solar site,
+    not in a distant data centre. We put a small, dependable computer there.
+  </p>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>It listens</h3>
+      <p>It asks the inverter, meter and weather station for their readings using the languages they already speak.</p>
+    </div>
+    <div class="tile">
+      <h3>It translates</h3>
+      <p>It turns every reading into one common shape, so the cloud does not need a different rule for every vendor.</p>
+    </div>
+    <div class="tile">
+      <h3>It protects</h3>
+      <p>If the internet is down, it keeps the readings on local disk instead of losing them.</p>
+    </div>
+    <div class="tile">
+      <h3>It sends</h3>
+      <p>When the connection returns, it sends the backlog and new readings to AWS in a safe order.</p>
+    </div>
+  </div>
+
+  <p>
+    Think of it as four workers in one small box: a translator, a packer, an
+    outbox clerk and a sender. The box is small on purpose. It may have only 1 GB
+    of memory, so it must not try to be a data centre.
+  </p>
+
+  <h2>3. The one common parcel: a Sample and a Batch</h2>
+  <p>
+    The most important idea in the project is that all those different languages
+    must end up in one common shape.
+  </p>
+  <p>
+    A <strong>Sample</strong> is one reading. It answers:
+  </p>
+  <ul>
+    <li>Which asset is this? (for example, inverter <code>inv-01</code>)</li>
+    <li>What is being measured? (for example, <code>ac_power_kw</code>)</li>
+    <li>What is the value? (for example, 123.4)</li>
+    <li>When was it measured? (always in UTC, so sites in different time zones agree)</li>
+    <li>Where did it come from? (a register, an OPC UA node, a topic)</li>
+    <li>What unit is it in? (kW, °C, kWh)</li>
+    <li>Can we trust it? (<code>good</code>, <code>uncertain</code>, <code>bad</code> or <code>stale</code>)</li>
+  </ul>
+  <p>
+    A <strong>Batch</strong> is a small parcel of samples from one device. Sending
+    one parcel instead of one message per reading saves money and reduces network
+    chatter. It is like posting a folder of letters instead of one envelope per
+    page.
+  </p>
+
+  <div class="callout">
+    <strong>Why “frozen”?</strong>
+    If every protocol invented its own parcel shape, every dashboard and database
+    would need a special case. We freeze one shape — like agreeing that every
+    parcel in the postal system has the same label layout. A future change to the
+    shape must be deliberate and versioned, not accidental.
+  </div>
+
+  <h2>4. The point map: the address book</h2>
+  <p>
+    A <strong>point map</strong> is a configuration file that says, in effect:
+  </p>
+  <blockquote>
+    “On inverter <code>inv-01</code>, the value at holding register 100 is AC power,
+    stored as a 32-bit decimal number, in kW. Call it <code>ac_power_kw</code>.
+    Ignore changes smaller than 0.1 kW.”
+  </blockquote>
+  <p>
+    The point map is the address book between the equipment and the common parcel.
+    It is deliberately a file, not Python code, because a controls engineer should
+    be able to review it. It also records the awkward details: register type,
+    word order, scaling and units.
+  </p>
+  <p>
+    The point map does <strong>not</strong> guess. A real register map must come
+    from a vendor document or a captured trace. A wrong address can produce a
+    plausible number for the wrong measurement, which is worse than no number.
+  </p>
+
+  <h2>5. What happens when the internet disappears?</h2>
+  <p>
+    Imagine the site link goes down at 10:00 and returns at 14:00.
+  </p>
+  <ol>
+    <li>The collector keeps reading the equipment.</li>
+    <li>The sender cannot reach AWS, so it says “not available”.</li>
+    <li>The batch goes into a local <strong>spool</strong> — an outbox on disk.</li>
+    <li>New batches queue behind the old ones. Nothing overtakes the backlog.</li>
+    <li>At 14:00 the link returns. The oldest parcel is sent first, then the next, and so on.</li>
+    <li>Only after a parcel is confirmed sent is it removed from the outbox.</li>
+  </ol>
+  <p>
+    This is called <strong>store-and-forward</strong>. It is the difference between
+    “we lost four hours of data” and “we have four hours of data with a delay”.
+  </p>
+  <p>
+    If the process crashes or the power cuts, a committed spool entry survives.
+    The collector may send a parcel twice after a crash — that is safer than
+    silently losing it. The central system must be able to ignore duplicates.
+  </p>
+
+  <h2>6. The queue and the spool are different things</h2>
+  <table>
+    <thead><tr><th></th><th>Queue</th><th>Spool</th></tr></thead>
+    <tbody>
+      <tr><td>Where</td><td>Memory (RAM)</td><td>Local disk (SQLite)</td></tr>
+      <tr><td>Size</td><td>Small and bounded</td><td>Larger, byte-budgeted</td></tr>
+      <tr><td>Survives power cut?</td><td>No</td><td>Yes, for committed entries</td></tr>
+      <tr><td>Job</td><td>Absorb short bursts</td><td>Survive long outages</td></tr>
+      <tr><td>When full</td><td>Drop oldest by default</td><td>Drop oldest payloads over budget</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The queue is a shop counter. The spool is the back room. If the counter is
+    full, the oldest item on the counter is removed to make room for the newest;
+    that policy is called <code>drop_oldest</code>. The back room is larger and
+    survives a power cut.
+  </p>
+
+  <h2>7. Why a “postmaster” sits between us and AWS</h2>
+  <p>
+    The collector does not hold AWS passwords or private keys, and it does not
+    talk to AWS directly. A local Greengrass process — the <strong>nucleus</strong>
+    — owns the device certificate and the secure connection. It is the local
+    postmaster.
+  </p>
+  <ul>
+    <li>The collector hands a sealed parcel to the postmaster over a local socket.</li>
+    <li>The postmaster owns the identity and the encrypted connection to AWS.</li>
+    <li>The postmaster can queue messages while the cloud link is down.</li>
+    <li>The collector never contains long-lived AWS keys.</li>
+  </ul>
+  <p>
+    This is why the component can be installed, updated and removed without
+    handling the site’s cloud identity.
+  </p>
+
+  <h2>8. What is actually working today</h2>
+  <p>
+    The project has reached a real, tested milestone:
+  </p>
+  <ul>
+    <li>A collector can read a solar-style Modbus TCP device.</li>
+    <li>It turns the readings into the common Sample/Batch shape.</li>
+    <li>It batches and buffers them.</li>
+    <li>It sends them through Greengrass to AWS IoT Core.</li>
+    <li>A real Modbus batch has been observed in AWS.</li>
+    <li>Status heartbeats, JSON logs, a support bundle, CloudWatch logs and a heartbeat alarm are working.</li>
+    <li>The same code builds and passes tests on arm64 and x86_64.</li>
+  </ul>
+  <p>
+    The current live component is <strong>1.0.12</strong>. The solar data comes
+    from a <strong>local surrogate</strong>, not a real inverter yet. The surrogate
+    is a stand-in that behaves like a small solar device so the whole path can be
+    tested safely.
+  </p>
+
+  <h2>9. What is not done yet</h2>
+  <ul>
+    <li><strong>A real inverter on a real site.</strong> We need the Huawei model and its register map.</li>
+    <li><strong>Modbus RTU.</strong> RS-485 wiring and a USB adapter, then hardware-in-the-loop testing.</li>
+    <li><strong>OPC UA.</strong> The next protocol adapter.</li>
+    <li><strong>A production base image.</strong> The test core is 601 MB; the production target is smaller.</li>
+    <li><strong>The client’s AWS account, Git organization and namespace.</strong> The current names are sandbox placeholders.</li>
+    <li><strong>A remote shell.</strong> This is deliberately absent. Support is evidence-first: logs, bundle and alarm.</li>
+    <li><strong>Forty sites.</strong> We are proving one solar site and one protocol first.</li>
+  </ul>
+
+  <h2>10. What the cloud currently receives</h2>
+  <p>
+    AWS IoT Core receives two kinds of messages:
+  </p>
+  <ul>
+    <li><strong>Telemetry</strong> on <code>edge/&lt;gateway&gt;/&lt;device&gt;/telemetry</code>. These are the readings.</li>
+    <li><strong>Status</strong> on <code>edge/&lt;gateway&gt;/status</code>. This is a heartbeat saying “I am alive, ready and connected”.</li>
+  </ul>
+  <p>
+    IoT Core is a mailbox, not a filing cabinet. It passes messages to subscribers;
+    it does not keep the telemetry forever. S3 currently stores component ZIPs and
+    support bundles, not telemetry. A future IoT rule can copy telemetry to S3 if
+    the client wants a permanent archive.
+  </p>
+
+  <h2>11. Why there is so much testing</h2>
+  <p>
+    A gateway that works for five minutes in a demo is not a gateway. The tests
+    deliberately break things:
+  </p>
+  <ul>
+    <li>Stop the broker and check that data is spooled, then replayed.</li>
+    <li>Restart the process and check that the spool survives.</li>
+    <li>Corrupt a spooled parcel and check that the rest continues.</li>
+    <li>Send an invalid point map and check that it fails before deployment.</li>
+    <li>Disconnect the gateway and check that the heartbeat alarm fires.</li>
+    <li>Run on both arm64 and x86_64.</li>
+  </ul>
+  <p>
+    The goal is not to make the tests look impressive. It is to find the failure
+    before the client’s site does.
+  </p>
+
+  <h2>12. What you need to do now</h2>
+  <ol>
+    <li>Nothing urgent. The current sandbox is running and the SNS alarm is confirmed.</li>
+    <li>For a real site, provide the inverter model and register map.</li>
+    <li>For RTU, provide a gateway, USB-RS485 adapter and a sensor/PLC for a bench test.</li>
+    <li>Before client deployment, provide the client Git organization, AWS account and namespace.</li>
+    <li>Before a pilot, approve data retention, remote access and security review.</li>
+  </ol>
+
+  <h2>13. Where to go next</h2>
+  <div class="grid-2">
+    <div class="tile">
+      <h3>Understand the basics</h3>
+      <p><a href="00-primer.html">Hardware and protocol primer</a> — RS-485, Modbus, registers and OPC UA in beginner terms.</p>
+    </div>
+    <div class="tile">
+      <h3>See the design</h3>
+      <p><a href="02-design.html">The design</a> — the stack, the contract, the pipeline and the spool, with less jargon.</p>
+    </div>
+    <div class="tile">
+      <h3>See the current state</h3>
+      <p><a href="07-status.html">Status and roadmap</a> — what is proven, what is live and what comes next.</p>
+    </div>
+    <div class="tile">
+      <h3>Run a check yourself</h3>
+      <p><a href="../testing-validation.html">Testing and validation</a> — a copy-and-paste checklist.</p>
+    </div>
+  </div>
+
+  <div class="callout ok">
+    <strong>If you remember one thing:</strong>
+    the project is a careful postal service for solar readings. It translates many
+    device languages into one parcel, protects the parcel when the network fails,
+    and hands it to a trusted local postmaster who owns the cloud connection.
+  </div>
+
+  <nav class="book-nav">
+    <a href="index.html">← Contents</a>
+    <a class="next" href="00-primer.html">Primer — hardware and protocols →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Plain English · <a href="index.html">Contents</a></footer>
+</body>
+</html>
