@@ -63,19 +63,34 @@
     </tbody>
   </table>
 
+  <h2>Protocols in the SOW</h2>
+  <table>
+    <thead><tr><th>Protocol</th><th>Plain meaning</th><th>Status here</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Modbus RTU</strong></td><td>Modbus over RS-485 serial wiring; one master polls numbered slaves.</td><td>Planned</td></tr>
+      <tr><td><strong>Modbus TCP</strong></td><td>Modbus over Ethernet; a client reads registers from an IP address and unit id.</td><td>Implemented</td></tr>
+      <tr><td><strong>OPC UA</strong></td><td>A structured, secure industrial address space with nodes, subscriptions and status codes.</td><td>Planned</td></tr>
+      <tr><td><strong>OPC DA</strong></td><td>An older Windows COM/DCOM protocol; usually reached through a gateway or UA wrapper.</td><td>Compatibility only</td></tr>
+      <tr><td><strong>MQTT</strong></td><td>A publish/subscribe protocol with a broker, topics and QoS levels.</td><td>Implemented as the northbound transport</td></tr>
+      <tr><td><strong>IEC 60870-5-104</strong></td><td>A utility SCADA protocol over TCP, common at substations and grid interconnections.</td><td>Not started</td></tr>
+      <tr><td><strong>DNP3</strong></td><td>A utility SCADA protocol with masters, outstations, objects and event buffers.</td><td>Not started</td></tr>
+      <tr><td><strong>REST</strong></td><td>An HTTP/JSON web API, often used by vendor cloud portals.</td><td>Not started</td></tr>
+    </tbody>
+  </table>
+
   <h2>L–R</h2>
   <table>
     <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
     <tbody>
       <tr><td><strong>mTLS</strong></td><td>Mutual TLS: both sides present certificates. The gateway proves itself to AWS, and AWS proves itself to the gateway.</td></tr>
-      <tr><td><strong>Modbus</strong></td><td>A common industrial protocol based on registers and coils. It is a Phase 1 source, not yet implemented.</td></tr>
+      <tr><td><strong>Modbus</strong></td><td>A simple industrial protocol based on registers and coils. Implemented for <strong>Modbus TCP</strong>; Modbus RTU is planned.</td></tr>
       <tr><td><strong>Nucleus</strong></td><td>The core Greengrass process on the gateway. It starts components, owns the device certificate and talks to AWS.</td></tr>
       <tr><td><strong>NoContainer</strong></td><td>A Greengrass execution mode where the component runs as a normal process, not inside a nested Docker container.</td></tr>
-      <tr><td><strong>OPC UA</strong></td><td>An industrial protocol with a structured address space, quality codes and security. It is a Phase 1 source, not yet implemented.</td></tr>
+      <tr><td><strong>OPC UA</strong></td><td>An industrial protocol with a structured address space, quality codes and security. Planned, not yet implemented.</td></tr>
       <tr><td><strong>Outbox / spool</strong></td><td>A disk buffer that holds completed batches while the uplink is down. SQLite is used here.</td></tr>
       <tr><td><strong>Pipeline</strong></td><td>The component that accepts samples, groups them, builds batches and delivers them in order.</td></tr>
       <tr><td><strong>PLC</strong></td><td>Programmable Logic Controller: the industrial computer that controls a machine or line.</td></tr>
-      <tr><td><strong>Point map</strong></td><td>A configuration document that maps device addresses and registers to metric names, units, scaling and deadbands. The central Phase 1 deliverable.</td></tr>
+      <tr><td><strong>Point map</strong></td><td>A configuration document that maps device addresses and registers to metric names, units, scaling and deadbands. The schema and validator are implemented; the Modbus TCP source consumes it.</td></tr>
       <tr><td><strong>Quality</strong></td><td>Whether a sample is <code>good</code>, <code>uncertain</code>, <code>bad</code> or <code>stale</code>. Carried on the wire, never inferred.</td></tr>
       <tr><td><strong>Recipe</strong></td><td>The Greengrass component instruction card: name, version, platform manifests, artifacts, lifecycle commands and configuration.</td></tr>
       <tr><td><strong>Role alias</strong></td><td>An AWS IoT alias that points to the TES role. The nucleus asks for credentials through it.</td></tr>

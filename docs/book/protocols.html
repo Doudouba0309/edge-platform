@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Industrial protocols — a plain-English field guide | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="plain-english.html">Plain English</a><a href="00-primer.html">Primer</a><a href="protocols.html">Protocols</a><a href="hardware.html">Hardware</a><a href="glossary.html">Glossary</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Reference · protocols</p>
+  <h1>Industrial protocols, without the mystery</h1>
+  <p class="lede">
+    A protocol is an agreement about how to ask a device a question and how to
+    understand the answer. This chapter explains the protocols in the SOW and the
+    gateway roadmap, what each one is good at, and what it is not.
+  </p>
+
+  <div class="callout">
+    <strong>Read this first.</strong>
+    No protocol is “best”. Each was designed for a different job. Modbus is simple
+    and everywhere; OPC UA is structured and secure; MQTT is a publish/subscribe
+    transport; IEC 60870-5-104 and DNP3 are utility SCADA protocols; REST is a web
+    API. The point map turns any of them into the same <code>Sample</code>.
+  </div>
+
+  <h2>1. The four questions to ask about any protocol</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Why it matters</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td><strong>What is the physical link?</strong></td><td>Determines the cable, adapter, isolation and distance.</td><td>RS-485, Ethernet, Wi-Fi, cellular</td></tr>
+      <tr><td><strong>Who starts the conversation?</strong></td><td>Determines whether the gateway polls or subscribes.</td><td>Master/slave, client/server, publisher/broker</td></tr>
+      <tr><td><strong>How is a value addressed?</strong></td><td>The same number can mean different things in different protocols.</td><td>Register, node id, topic, object, URL</td></tr>
+      <tr><td><strong>How is meaning encoded?</strong></td><td>Determines data type, byte order, scale and quality.</td><td>16-bit register, float32, JSON, ASDU</td></tr>
+    </tbody>
+  </table>
+
+  <div class="diagram">
+    <div class="box">Polling<br><span class="small">master asks; slave answers</span></div>
+    <div class="arrow">vs</div>
+    <div class="box">Subscription<br><span class="small">server sends changes</span></div>
+    <div class="arrow">vs</div>
+    <div class="box">Publish/subscribe<br><span class="small">broker distributes</span></div>
+  </div>
+
+  <h2>2. Modbus RTU and Modbus TCP</h2>
+  <p>
+    Modbus is the industrial equivalent of a short, simple phrasebook. It was
+    published in 1979 and is still everywhere because it is easy to implement and
+    easy to inspect.
+  </p>
+
+  <h3>The data model</h3>
+  <table>
+    <thead><tr><th>Data type</th><th>Width</th><th>Meaning</th><th>Read function</th></tr></thead>
+    <tbody>
+      <tr><td>Coil</td><td>1 bit</td><td>Readable/writable on/off state</td><td>01</td></tr>
+      <tr><td>Discrete input</td><td>1 bit</td><td>Read-only on/off state</td><td>02</td></tr>
+      <tr><td>Input register</td><td>16 bit</td><td>Read-only value</td><td>04</td></tr>
+      <tr><td>Holding register</td><td>16 bit</td><td>Readable/writable value</td><td>03</td></tr>
+    </tbody>
+  </table>
+  <p>
+    A 32-bit number or a float occupies two consecutive registers. The order of
+    those two registers (word order) and the byte order inside each register are
+    vendor choices. Getting them wrong produces a plausible but wrong number.
+  </p>
+
+  <h3>RTU vs TCP</h3>
+  <table>
+    <thead><tr><th></th><th>Modbus RTU</th><th>Modbus TCP</th></tr></thead>
+    <tbody>
+      <tr><td>Physical</td><td>RS-485 (usually), sometimes RS-232</td><td>Ethernet / IP</td></tr>
+      <tr><td>Addressing</td><td>Slave/unit id 1–247 on the bus</td><td>IP address + port 502; unit id in the MBAP header</td></tr>
+      <tr><td>Framing</td><td>Binary frame + CRC</td><td>MBAP header + protocol data unit</td></tr>
+      <tr><td>Timing</td><td>Baud, parity, inter-frame silence</td><td>Network latency and TCP connection behaviour</td></tr>
+      <tr><td>Typical use</td><td>Inverters, meters, PLCs on a serial trunk</td><td>Plant LAN, gateway-to-device, SCADA</td></tr>
+      <tr><td>Common failures</td><td>A/B swapped, wrong baud, no termination, wrong slave id</td><td>Wrong IP/port, firewall, unit id, connection limit</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Addresses are a trap.</strong>
+    A vendor document may show “40001” or “40100”. That is usually a
+    human-readable reference, not the number sent on the wire. The wire often
+    uses a zero-based offset. The point map must record the convention instead of
+    guessing.
+  </div>
+
+  <p>
+    <strong>In this platform:</strong> Modbus TCP is the first implemented source
+    (solar, 1.0.12). Modbus RTU is planned for the next slice, with a USB-RS485
+    adapter and hardware-in-the-loop testing.
+  </p>
+
+  <h2>3. OPC UA</h2>
+  <p>
+    OPC UA is a richer industrial protocol. Instead of raw registers, a server
+    exposes a structured address space of <strong>nodes</strong>. Each node has a
+    node id, type, value, timestamp and status code.
+  </p>
+  <table>
+    <thead><tr><th>Concept</th><th>Plain English</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Endpoint</strong></td><td>The URL of the server, e.g. <code>opc.tcp://192.0.2.10:4840</code>.</td></tr>
+      <tr><td><strong>Node id</strong></td><td>The address of one value, e.g. <code>ns=2;s=Inverter1.Power</code>.</td></tr>
+      <tr><td><strong>Session</strong></td><td>A secured, stateful connection between client and server.</td></tr>
+      <tr><td><strong>Subscription</strong></td><td>The server sends changes instead of the client polling each value.</td></tr>
+      <tr><td><strong>StatusCode</strong></td><td>Good, uncertain or bad, with a reason.</td></tr>
+      <tr><td><strong>Security</strong></td><td>Certificates, signing and encryption are built into the protocol.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    OPC UA is not “better Modbus”. It is a trade-off: more structure, security and
+    metadata, but a heavier server and more configuration. Many modern PLCs expose
+    it; many small inverters do not.
+  </p>
+
+  <h2>4. OPC DA — the older Windows protocol</h2>
+  <p>
+    OPC DA (Data Access) is the predecessor to OPC UA. It relies on Microsoft COM
+    and DCOM, so it is tied to Windows and is awkward across firewalls and networks.
+    It is still found in older SCADA and historian installations.
+  </p>
+  <div class="callout">
+    <strong>Do not expose DCOM to the internet.</strong>
+    If a site only has OPC DA, the usual approach is a local Windows gateway or an
+    OPC DA-to-OPC UA wrapper. The edge collector should not depend on DCOM or a
+    Windows runtime. OPC DA is a compatibility problem, not a first-choice
+    integration.
+  </div>
+
+  <h2>5. MQTT</h2>
+  <p>
+    MQTT is a publish/subscribe protocol built around a broker. Devices publish to
+    topics; subscribers receive matching messages. It is excellent for the
+    northbound path and for gateways that already aggregate data.
+  </p>
+  <table>
+    <thead><tr><th>Concept</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Broker</strong></td><td>The server that receives and distributes messages.</td></tr>
+      <tr><td><strong>Topic</strong></td><td>A hierarchical address, e.g. <code>edge/site/inv-01/telemetry</code>.</td></tr>
+      <tr><td><strong>QoS 0/1/2</strong></td><td>At most once / at least once / exactly once delivery semantics.</td></tr>
+      <tr><td><strong>Retained message</strong></td><td>The broker keeps the last message for a new subscriber.</td></tr>
+      <tr><td><strong>Last Will</strong></td><td>A message published by the broker if a client disappears.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    MQTT does not define registers, coils, node ids or units. It is a transport for
+    data that is already structured. The project uses MQTT for the northbound
+    telemetry path, not as a replacement for Modbus or OPC UA.
+  </p>
+
+  <h2>6. IEC 60870-5-104</h2>
+  <p>
+    IEC 60870-5-104 (“IEC 104”) is a utility SCADA protocol used to monitor and
+    control substations and grid assets over TCP. It carries <strong>ASDUs</strong>
+    (application service data units) with a common address, information object
+    address, type identifier and value.
+  </p>
+  <ul>
+    <li><strong>Physical:</strong> TCP/IP, usually port 2404.</li>
+    <li><strong>Model:</strong> controlling station and controlled station.</li>
+    <li><strong>Data:</strong> status points, measurements, counters, commands and events.</li>
+    <li><strong>Typical use:</strong> grid interconnection, substations and utility dispatch.</li>
+    <li><strong>Not typical:</strong> a small solar inverter’s internal telemetry.</li>
+  </ul>
+  <p>
+    It may be relevant at the <strong>grid meter or interconnection</strong> layer,
+    not at the inverter. It is not implemented in this phase and should not be
+    confused with Modbus.
+  </p>
+
+  <h2>7. DNP3</h2>
+  <p>
+    DNP3 (Distributed Network Protocol) is another utility SCADA protocol, common
+    in electricity, water and oil-and-gas networks. It uses a master/outstation
+    model, objects and variations, and event buffers.
+  </p>
+  <ul>
+    <li><strong>Physical:</strong> TCP/IP, usually port 20000, or serial.</li>
+    <li><strong>Model:</strong> master and outstation.</li>
+    <li><strong>Data:</strong> binary inputs, analog inputs, counters, outputs and events.</li>
+    <li><strong>Security:</strong> DNP3 Secure Authentication exists but is not universal.</li>
+    <li><strong>Typical use:</strong> utility remote monitoring and control.</li>
+  </ul>
+  <p>
+    Like IEC 104, DNP3 belongs to the grid/utility edge, not the inverter’s Modbus
+    register map. It is not implemented yet.
+  </p>
+
+  <h2>8. REST APIs</h2>
+  <p>
+    A REST API is a web interface: the client sends an HTTP request and receives
+    JSON (usually). Vendor cloud APIs — for example a Huawei FusionSolar portal —
+    are often REST, not Modbus.
+  </p>
+  <table>
+    <thead><tr><th>Strength</th><th>Weakness</th></tr></thead>
+    <tbody>
+      <tr><td>Easy to integrate, well documented, works through HTTPS</td><td>Not real-time; rate limits; pagination; cloud dependency</td></tr>
+      <tr><td>Good for fleet-level and vendor portals</td><td>Often minutes behind, not suitable for fast control or fault capture</td></tr>
+      <tr><td>JSON is easy to inspect</td><td>Authentication and API changes are vendor-specific</td></tr>
+    </tbody>
+  </table>
+  <p>
+    REST is a useful later source for vendor-cloud data, but it is not a substitute
+    for a local Modbus/OPC UA connection when the site needs full-resolution data.
+  </p>
+
+  <h2>9. Protocol comparison</h2>
+  <table>
+    <thead><tr><th>Protocol</th><th>Physical</th><th>Conversation</th><th>Typical use</th><th>Platform status</th></tr></thead>
+    <tbody>
+      <tr><td>Modbus RTU</td><td>RS-485</td><td>Master/slave, polled</td><td>Inverters, meters, PLCs</td><td>Planned</td></tr>
+      <tr><td>Modbus TCP</td><td>Ethernet</td><td>Client/server, polled</td><td>Plant LAN, gateways</td><td><strong>Implemented</strong></td></tr>
+      <tr><td>OPC UA</td><td>Ethernet</td><td>Client/server + subscriptions</td><td>PLCs, SCADA, historians</td><td>Planned</td></tr>
+      <tr><td>OPC DA</td><td>Windows COM/DCOM</td><td>Client/server</td><td>Legacy SCADA</td><td>Via gateway/wrapper only</td></tr>
+      <tr><td>MQTT</td><td>TCP/TLS</td><td>Publish/subscribe</td><td>Northbound telemetry</td><td><strong>Implemented as sink</strong></td></tr>
+      <tr><td>IEC 60870-5-104</td><td>TCP</td><td>Controlling/controlled</td><td>Utility grid SCADA</td><td>Not started</td></tr>
+      <tr><td>DNP3</td><td>TCP or serial</td><td>Master/outstation</td><td>Utility SCADA</td><td>Not started</td></tr>
+      <tr><td>REST</td><td>HTTPS</td><td>Request/response</td><td>Vendor cloud APIs</td><td>Not started</td></tr>
+    </tbody>
+  </table>
+
+  <h2>10. How a protocol becomes a Sample</h2>
+  <div class="diagram">
+    <div class="box">Vendor document<br><span class="small">address, type, unit</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Point map<br><span class="small">metric, scale, order</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Source adapter<br><span class="small">read / subscribe</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Sample<br><span class="small">one common shape</span></div>
+  </div>
+  <p>
+    The protocol adapter is allowed to know about Modbus or OPC UA. The rest of the
+    system is not. That boundary is why a new protocol does not change the cloud
+    contract, the spool or the dashboards.
+  </p>
+
+  <h2>11. Security rules that apply to every protocol</h2>
+  <ul>
+    <li><strong>Read-only first.</strong> No writes or control commands in v1.</li>
+    <li><strong>No inbound internet access.</strong> The gateway connects out; nothing connects in.</li>
+    <li><strong>No credentials in the component.</strong> The nucleus owns the device identity.</li>
+    <li><strong>Respect the OT network.</strong> Use the site’s firewall/VLAN rules; do not bypass them.</li>
+    <li><strong>Never invent a register map.</strong> A wrong address can look like a valid measurement.</li>
+    <li><strong>Count failures.</strong> A timeout is not a zero; it is bad quality.</li>
+  </ul>
+
+  <h2>12. What to ask a vendor</h2>
+  <ul class="checklist">
+    <li>Which protocol and physical layer?</li>
+    <li>For Modbus: unit id, IP/port or serial settings, register map.</li>
+    <li>Address convention: reference number or zero-based offset?</li>
+    <li>Function code and data type for every point.</li>
+    <li>Byte order, word order, signedness, float vs integer.</li>
+    <li>Scale, offset, unit and rollover behaviour.</li>
+    <li>Which points are mandatory, optional, and how often they change.</li>
+    <li>A known-good capture or nameplate value to prove the interpretation.</li>
+    <li>Whether writes are needed (v1: no).</li>
+    <li>Any gateway, firewall or connection-limit constraint.</li>
+  </ul>
+
+  <h2>Where to go next</h2>
+  <div class="grid-2">
+    <div class="tile"><h3>Hardware</h3><p><a href="hardware.html">Hardware architecture</a> — the gateway, serial/network, power and site topology.</p></div>
+    <div class="tile"><h3>Primer</h3><p><a href="00-primer.html">Hardware and protocol primer</a> — a gentler introduction to the same ideas.</p></div>
+    <div class="tile"><h3>Solar scope</h3><p><a href="../solar-modbus-scope.md">Solar + Modbus TCP scope</a> — the first concrete slice.</p></div>
+    <div class="tile"><h3>Plain English</h3><p><a href="plain-english.html">Plain English guide</a> — the whole project as a story.</p></div>
+  </div>
+
+  <nav class="book-nav">
+    <a href="00-primer.html">← Primer</a>
+    <a class="next" href="hardware.html">Hardware architecture →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Protocols · <a href="index.html">Contents</a></footer>
+</body>
+</html>

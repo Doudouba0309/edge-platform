@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardware architecture — from sensor to cloud | Edge Platform Handbook</title>
+<link rel="stylesheet" href="book.css">
+</head>
+<body>
+
+<header class="book-top">
+  <a class="brand" href="index.html">Edge Platform Handbook</a>
+  <nav><a href="index.html#contents">Contents</a><a href="plain-english.html">Plain English</a><a href="00-primer.html">Primer</a><a href="protocols.html">Protocols</a><a href="hardware.html">Hardware</a><a href="glossary.html">Glossary</a></nav>
+</header>
+
+<main class="page">
+  <p class="chapter-label">Reference · hardware</p>
+  <h1>Hardware architecture: from sunlight to AWS</h1>
+  <p class="lede">
+    The gateway is not a mysterious box. It is a small industrial computer in a
+    cabinet, with power, storage, serial ports, network ports and a secure identity.
+    This chapter explains the physical chain around it and the choices that make it
+    survive a real solar site.
+  </p>
+
+  <div class="callout">
+    <strong>The one-sentence version.</strong>
+    Sensors and inverters produce electrical signals; PLCs, meters and gateways
+    turn those signals into data; the edge gateway translates and protects the data;
+    the network carries it outbound; AWS receives it.
+  </div>
+
+  <h2>1. A solar site, physically</h2>
+  <div class="diagram">
+    <div class="box">Solar arrays<br><span class="small">DC electricity</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Inverters<br><span class="small">DC → AC</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Revenue meter<br><span class="small">exported energy</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Grid<br><span class="small">utility</span></div>
+  </div>
+  <div class="diagram">
+    <div class="box">Weather station<br><span class="small">irradiance · temp · wind</span></div>
+    <div class="arrow">→</div>
+    <div class="box">SCADA / historian<br><span class="small">site supervision</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Edge gateway<br><span class="small">read · translate · buffer</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Router / cellular<br><span class="small">outbound only</span></div>
+    <div class="arrow">→</div>
+    <div class="box">AWS<br><span class="small">IoT Core</span></div>
+  </div>
+  <p>
+    The two diagrams describe the same site from different angles: the power path
+    (arrays → inverters → meter → grid) and the data path (equipment → SCADA →
+    gateway → cloud). They may share cables or a cabinet, but they are different
+    concerns.
+  </p>
+
+  <h2>2. The devices you will meet</h2>
+  <table>
+    <thead><tr><th>Device</th><th>What it does</th><th>How we usually read it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Inverter</strong></td><td>Converts DC from the arrays to AC for the grid; exposes power, energy, temperature, state and fault codes.</td><td>Modbus TCP/RTU, sometimes OPC UA or a vendor API</td></tr>
+      <tr><td><strong>Revenue meter</strong></td><td>Measures exported/imported energy for billing and grid settlement.</td><td>Modbus RTU/TCP, pulse output, sometimes IEC 104/DNP3</td></tr>
+      <tr><td><strong>Weather station</strong></td><td>Measures irradiance, ambient temperature, wind speed and sometimes module temperature.</td><td>Modbus RTU/TCP, analog, vendor gateway</td></tr>
+      <tr><td><strong>PLC / RTU</strong></td><td>Controls or aggregates site equipment; may expose a register map or OPC UA.</td><td>Modbus, OPC UA, IEC 104, DNP3</td></tr>
+      <tr><td><strong>SCADA / historian</strong></td><td>Supervises the plant and stores history; may already have the data you need.</td><td>OPC UA/DA, database, vendor API</td></tr>
+      <tr><td><strong>Edge gateway</strong></td><td>Reads, normalizes, buffers and publishes; runs the collector and Greengrass nucleus.</td><td>Outbound MQTT/TLS to AWS</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Inside the gateway</h2>
+  <table>
+    <thead><tr><th>Part</th><th>Why it matters</th><th>Practical note</th></tr></thead>
+    <tbody>
+      <tr><td><strong>CPU</strong></td><td>Runs the collector, nucleus and TLS.</td><td>arm64 or x86_64; a small industrial CPU is enough.</td></tr>
+      <tr><td><strong>RAM</strong></td><td>Holds the queue and process memory.</td><td>Design for 1 GB; the queue is bounded.</td></tr>
+      <tr><td><strong>Storage</strong></td><td>Holds the spool, logs and support artifacts.</td><td>Industrial eMMC/SSD; account for wear and power loss.</td></tr>
+      <tr><td><strong>Ethernet</strong></td><td>Connects to the plant LAN and/or the internet router.</td><td>Two ports are useful: OT side and IT/WAN side.</td></tr>
+      <tr><td><strong>RS-485</strong></td><td>Talks to Modbus RTU devices.</td><td>Isolated port, termination and bias matter.</td></tr>
+      <tr><td><strong>Digital I/O</strong></td><td>Optional dry contacts, door sensors or pulse inputs.</td><td>Not required for the first solar slice.</td></tr>
+      <tr><td><strong>RTC / NTP</strong></td><td>Keeps timestamps correct.</td><td>Use NTP; a wrong clock breaks TLS and data ordering.</td></tr>
+      <tr><td><strong>Power</strong></td><td>Supplies the gateway.</td><td>24 V DC or PoE; a small UPS prevents corrupt writes.</td></tr>
+      <tr><td><strong>Watchdog</strong></td><td>Recovers from a hung process.</td><td>Hardware watchdog plus a service manager.</td></tr>
+      <tr><td><strong>Enclosure</strong></td><td>Protects from dust, heat, vibration and tampering.</td><td>DIN rail, IP-rated, lockable cabinet.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Power, grounding and survival</h2>
+  <p>
+    A gateway that loses power mid-write can corrupt its filesystem. A gateway that
+    shares a noisy ground with a inverter can reset randomly. These are not software
+    problems.
+  </p>
+  <ul>
+    <li><strong>Use a proper supply.</strong> Respect the input voltage range and fuse the feed.</li>
+    <li><strong>Use a UPS or supercapacitor.</strong> Give the gateway time to flush and shut down.</li>
+    <li><strong>Ground and surge-protect.</strong> Follow the site’s electrical rules; do not improvise.</li>
+    <li><strong>Separate noisy cables.</strong> Keep RS-485 away from motor and inverter power cables where possible.</li>
+    <li><strong>Use isolation.</strong> An isolated RS-485 port protects the gateway from ground differences.</li>
+    <li><strong>Test power loss.</strong> Pull the power and confirm the spool survives a clean restart.</li>
+  </ul>
+
+  <h2>5. Serial wiring: RS-485 in practice</h2>
+  <p>
+    RS-485 is a shared bus. Several devices can sit on one pair of wires, but only
+    one should talk at a time. The gateway is usually the master.
+  </p>
+  <div class="diagram">
+    <div class="box">Gateway<br><span class="small">master</span></div>
+    <div class="arrow">A/B</div>
+    <div class="box">Inverter 1<br><span class="small">slave 1</span></div>
+    <div class="arrow">A/B</div>
+    <div class="box">Meter<br><span class="small">slave 2</span></div>
+    <div class="arrow">A/B</div>
+    <div class="box">Termination<br><span class="small">120 Ω at the end</span></div>
+  </div>
+  <ul>
+    <li><strong>Daisy chain, not star.</strong> Keep stubs short.</li>
+    <li><strong>Terminate both physical ends.</strong> Usually 120 Ω; not at every device.</li>
+    <li><strong>Bias the idle line</strong> if the vendor requires it.</li>
+    <li><strong>Match baud, parity, data bits and stop bits.</strong> 9600 8N1 is common but not universal.</li>
+    <li><strong>A/B labels are inconsistent.</strong> Swapping A and B is a valid first test.</li>
+    <li><strong>Use one slave id per device.</strong> Duplicate ids cause collisions and timeouts.</li>
+  </ul>
+
+  <h2>6. The network path</h2>
+  <div class="diagram">
+    <div class="box">OT network<br><span class="small">inverters · PLC · SCADA</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Gateway<br><span class="small">outbound only</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Site firewall<br><span class="small">allow 443/8883 out</span></div>
+    <div class="arrow">→</div>
+    <div class="box">Internet<br><span class="small">cellular or fibre</span></div>
+    <div class="arrow">→</div>
+    <div class="box">AWS IoT Core<br><span class="small">TLS 8883</span></div>
+  </div>
+  <p>
+    The preferred design is <strong>outbound-only</strong>. The gateway opens a TLS
+    connection to AWS; nothing on the internet opens a connection into the plant.
+    The site firewall should allow outbound DNS, NTP, HTTPS (443) and MQTT/TLS
+    (8883), and should not expose the gateway to inbound traffic.
+  </p>
+  <table>
+    <thead><tr><th>Need</th><th>Why</th><th>Typical port</th></tr></thead>
+    <tbody>
+      <tr><td>DNS</td><td>Resolve AWS endpoints.</td><td>53</td></tr>
+      <tr><td>NTP</td><td>Correct time for TLS and timestamps.</td><td>123/UDP</td></tr>
+      <tr><td>HTTPS</td><td>Credentials, artifacts and APIs.</td><td>443</td></tr>
+      <tr><td>MQTT/TLS</td><td>Telemetry to IoT Core.</td><td>8883</td></tr>
+      <tr><td>Modbus TCP</td><td>Local device polling.</td><td>502 (LAN only)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Sizing the gateway</h2>
+  <p>
+    The design target is a device with about <strong>1 GB of RAM</strong> and a
+    modest CPU. The queue is bounded; the spool is byte-budgeted. But storage still
+    needs arithmetic.
+  </p>
+  <div class="callout">
+    <strong>A worked example.</strong>
+    Suppose a site publishes 12 points every 10 seconds and a batch is about
+    2.5 KB. That is roughly 6 batches/minute, 360/hour, about 21.6 MB/day.
+    A 64 MB spool would hold only about three days at that rate. A 30-day buffer
+    would need roughly 650 MB, plus SQLite overhead and logs. The current 64 MB
+    test default is a test budget, not a 30-day field guarantee.
+  </div>
+  <p>
+    The SOW asks for 30–90 days of local buffering. That is a <strong>site sizing
+    decision</strong>: choose storage and <code>spool.max_bytes</code> together.
+    Do not assume the default is enough for a real 30-day outage.
+  </p>
+
+  <h2>8. Choosing the box</h2>
+  <table>
+    <thead><tr><th>Option</th><th>Good for</th><th>Watch out for</th></tr></thead>
+    <tbody>
+      <tr><td>Industrial DIN-rail PC</td><td>Real plant cabinets, wide temperature, 24 V DC, isolated serial.</td><td>Cost; confirm Linux support and driver availability.</td></tr>
+      <tr><td>Rugged arm64 gateway</td><td>Low power, cellular, small footprint.</td><td>Storage wear, limited RAM, vendor Linux image.</td></tr>
+      <tr><td>Small x86 mini-PC</td><td>Lab, pilot, x86 compatibility.</td><td>Not industrial temperature; consumer power supply.</td></tr>
+      <tr><td>Raspberry Pi-class</td><td>Prototype and surrogate testing.</td><td>SD-card corruption, no industrial I/O, not a production default.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    For a pilot, an industrial box with two Ethernet ports, an isolated RS-485 port,
+    a wide-input power supply and a DIN-rail mount is the safer choice. The test
+    core on this laptop is not a production hardware recommendation.
+  </p>
+
+  <h2>9. Installation checklist</h2>
+  <ul class="checklist">
+    <li>Cabinet space, DIN rail and ventilation confirmed.</li>
+    <li>Power supply within range; fuse and surge protection fitted.</li>
+    <li>UPS or graceful shutdown available.</li>
+    <li>RS-485 A/B, ground, shield, termination and bias checked.</li>
+    <li>Ethernet ports labelled OT and WAN; no accidental bridging.</li>
+    <li>Outbound DNS, NTP, 443 and 8883 allowed; no inbound rule.</li>
+    <li>Time zone and NTP configured.</li>
+    <li>Gateway identity and certificate installed.</li>
+    <li>Spool size and retention agreed with the client.</li>
+    <li>Support bundle and logs reachable for support.</li>
+    <li>Power-loss and network-loss tests repeated on the real box.</li>
+  </ul>
+
+  <h2>10. Failure modes to design for</h2>
+  <table>
+    <thead><tr><th>Failure</th><th>What happens</th><th>Design response</th></tr></thead>
+    <tbody>
+      <tr><td>Power cut</td><td>Process stops mid-write.</td><td>WAL spool, UPS, clean shutdown, restart test.</td></tr>
+      <tr><td>SD/eMMC wear</td><td>Filesystem or database corruption.</td><td>Industrial storage, bounded writes, monitoring, replacement plan.</td></tr>
+      <tr><td>Network loss</td><td>No AWS connection.</td><td>Spool and replay; status heartbeat; alarm.</td></tr>
+      <tr><td>Serial wiring fault</td><td>Timeouts or CRC errors.</td><td>Isolation, termination, A/B check, bad quality.</td></tr>
+      <tr><td>Inverter reboot</td><td>Modbus exceptions/timeouts.</td><td>Retry with backoff; do not hammer.</td></tr>
+      <tr><td>Clock drift</td><td>TLS failures or wrong timestamps.</td><td>NTP, RTC, alarm on time drift.</td></tr>
+      <tr><td>Physical tampering</td><td>Credentials or data exposed.</td><td>Lockable cabinet, no inbound shell, certificate rotation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>11. Hardware and security</h2>
+  <ul>
+    <li><strong>No inbound shell by default.</strong> The support model is logs, support bundle and deployment.</li>
+    <li><strong>No AWS keys on disk.</strong> The nucleus owns the certificate and exchanges it for temporary credentials.</li>
+    <li><strong>Protect the private key.</strong> Restrict file permissions; never copy it into the repository.</li>
+    <li><strong>Lock the cabinet.</strong> Physical access to the gateway is access to the site identity.</li>
+    <li><strong>Plan rotation.</strong> Certificates and credentials have a lifecycle; record the owner.</li>
+    <li><strong>Use the client’s account and keys.</strong> The current sandbox is not a client deployment.</li>
+  </ul>
+
+  <h2>12. What this means for the first pilot</h2>
+  <p>
+    For the first solar + Modbus TCP pilot, the minimum hardware is:
+  </p>
+  <ul class="checklist">
+    <li>One industrial gateway with Linux, Python 3.12 and two Ethernet ports.</li>
+    <li>One isolated RS-485 port if RTU is included later.</li>
+    <li>One inverter with a documented Modbus TCP map.</li>
+    <li>One weather station or revenue meter, with its protocol and map.</li>
+    <li>A site firewall rule that allows outbound 443/8883 and no inbound access.</li>
+    <li>A UPS or clean-shutdown plan.</li>
+    <li>A storage budget that matches 30–90 days, not the 64 MB test default.</li>
+  </ul>
+
+  <h2>Where to go next</h2>
+  <div class="grid-2">
+    <div class="tile"><h3>Protocols</h3><p><a href="protocols.html">Industrial protocols</a> — Modbus, OPC UA, MQTT, IEC 104, DNP3 and REST.</p></div>
+    <div class="tile"><h3>Primer</h3><p><a href="00-primer.html">Hardware and protocol primer</a> — a gentler start.</p></div>
+    <div class="tile"><h3>Design</h3><p><a href="02-design.html">The design</a> — how the software uses the hardware.</p></div>
+    <div class="tile"><h3>Solar scope</h3><p><a href="../solar-modbus-scope.md">Solar + Modbus TCP scope</a> — the first concrete slice.</p></div>
+  </div>
+
+  <nav class="book-nav">
+    <a href="protocols.html">← Protocols</a>
+    <a class="next" href="spool.html">Spool deep dive →</a>
+  </nav>
+</main>
+
+<footer class="footer">Edge Platform Handbook · Hardware · <a href="index.html">Contents</a></footer>
+</body>
+</html>
